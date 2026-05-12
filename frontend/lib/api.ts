@@ -11,7 +11,20 @@ export function apiUrl(path: string): string {
 export interface User {
   id: string
   email: string
+  display_name: string | null
+  theme_preference: "system" | "light" | "dark"
+  default_home_tab: "chat" | "library" | "settings"
+  sidebar_collapsed: boolean
+  new_chat_scope_mode: "clear" | "remember" | "all-completed"
   created_at: string
+}
+
+export interface UserSettingsUpdate {
+  display_name?: string | null
+  theme_preference?: User["theme_preference"]
+  default_home_tab?: User["default_home_tab"]
+  sidebar_collapsed?: boolean
+  new_chat_scope_mode?: User["new_chat_scope_mode"]
 }
 
 export interface TokenResponse {

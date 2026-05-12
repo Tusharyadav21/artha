@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Column,
     DateTime,
@@ -20,6 +21,9 @@ from src.core.database import Base
 
 DOCUMENT_STATUSES = ("pending", "processing", "completed", "failed")
 MESSAGE_ROLES = ("user", "assistant", "system")
+USER_THEME_PREFERENCES = ("system", "light", "dark")
+USER_HOME_TABS = ("chat", "library", "settings")
+USER_NEW_CHAT_SCOPE_MODES = ("clear", "remember", "all-completed")
 
 
 def utcnow():
@@ -32,12 +36,32 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    display_name = Column(String(120), nullable=True)
+    theme_preference = Column(String(16), default="system", nullable=False)
+    default_home_tab = Column(String(16), default="chat", nullable=False)
+    sidebar_collapsed = Column(Boolean, default=False, nullable=False)
+    new_chat_scope_mode = Column(String(24), default="clear", nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     projects = relationship(
         "Project",
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "theme_preference IN ('system', 'light', 'dark')",
+            name="ck_users_theme_preference",
+        ),
+        CheckConstraint(
+            "default_home_tab IN ('chat', 'library', 'settings')",
+            name="ck_users_default_home_tab",
+        ),
+        CheckConstraint(
+            "new_chat_scope_mode IN ('clear', 'remember', 'all-completed')",
+            name="ck_users_new_chat_scope_mode",
+        ),
     )
 
 
@@ -171,5 +195,11 @@ class DocumentChunk(Base):
             postgresql_using="ivfflat",
             postgresql_ops={"embedding": "vector_cosine_ops"},
             postgresql_with={"lists": 100},
+        ),
+        Index(
+            "ix_document_chunks_content_fts",
+            "content",
+            postgresql_using="gin",
+            postgresql_ops={"content": "gin_trgm_ops"},
         ),
     )

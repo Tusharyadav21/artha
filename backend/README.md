@@ -35,8 +35,17 @@ The backend reads configuration from environment variables. A template is provid
 ### Prerequisites
 - Python `3.12+`
 - [uv](https://github.com/astral-sh/uv) (fast Python package manager)
-- PostgreSQL with `pgvector`
-- Redis
+- PostgreSQL `16+` with `pgvector` and `pg_trgm` extensions
+- Redis `7+`
+
+### Database Setup
+Before running migrations, ensure PostgreSQL extensions are created:
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+```
+
+The Docker setup automatically enables these. For local development, run the above SQL in your PostgreSQL database.
 
 ### Setup & Run
 1. **Sync Dependencies**:
@@ -70,6 +79,12 @@ We maintain high code quality standards through automated testing and linting.
 - **Async Ingestion**: Document uploads are non-blocking. Status is tracked in the DB.
 - **Streaming**: Responses are streamed via Server-Sent Events (SSE) for a snappy UX.
 - **Observability**: Fully integrated with Langfuse for tracing agent runs.
+- **Ollama Timeouts**: RAG queries depend on Ollama's response time. Expected latency:
+  - Query rewriting: ~1-2s
+  - Embedding: ~500ms per query
+  - LLM generation (streaming): ~3-10s depending on model and context
+  - Reranking: ~500ms per 20 chunks
+  - **Total chat latency**: 5-15 seconds typical. Configure timeouts or retry behavior in `src/services/ollama.py`
 
 ---
 <p align="center">Part of the <a href="../README.md">Agentic RAG</a> Stack</p>

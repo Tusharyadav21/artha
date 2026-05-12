@@ -23,3 +23,12 @@ class UserRepository:
         await self.db.commit()
         await self.db.refresh(user)
         return user
+
+    async def update(self, user: User, **kwargs) -> User:
+        for key, value in kwargs.items():
+            if hasattr(user, key):
+                setattr(user, key, value)
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user

@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from logging import getLogger
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.models import Document, DocumentChunk
@@ -113,16 +113,58 @@ class DocumentRepository:
         self,
         project_id: UUID,
         query_embedding: list[float],
+        query_text: str | None = None,
         limit: int = 6,
         document_ids: list[UUID] | None = None,
     ) -> list[tuple[DocumentChunk, Document, float]]:
+        """Perform hybrid search (Vector + Keyword) using Reciprocal Rank Fusion (RRF)."""
+        
+        # 1. Vector Search
         distance = DocumentChunk.embedding.cosine_distance(query_embedding).label("distance")
-        query = (
+        vector_query = (
             select(DocumentChunk, Document, distance)
             .join(Document, DocumentChunk.document_id == Document.id)
             .where(Document.project_id == project_id, Document.status == "completed")
         )
         if document_ids:
-            query = query.where(Document.id.in_(document_ids))
-        result = await self.db.execute(query.order_by(distance).limit(limit))
-        return [(chunk, document, float(score)) for chunk, document, score in result.all()]
+            vector_query = vector_query.where(Document.id.in_(document_ids))
+        
+        vector_result = await self.db.execute(vector_query.order_by(distance).limit(limit * 3))
+        vector_rows = vector_result.all()
+
+        # 2. Keyword Search (Trigram Similarity)
+        keyword_rows = []
+        if query_text:
+            similarity = func.similarity(DocumentChunk.content, query_text).label("similarity")
+            keyword_query = (
+                select(DocumentChunk, Document, similarity)
+                .join(Document, DocumentChunk.document_id == Document.id)
+                .where(Document.project_id == project_id, Document.status == "completed")
+                .where(DocumentChunk.content.op("%%")(query_text)) # Use trigram match
+            )
+            if document_ids:
+                keyword_query = keyword_query.where(Document.id.in_(document_ids))
+            
+            keyword_result = await self.db.execute(keyword_query.order_by(similarity.desc()).limit(limit * 3))
+            keyword_rows = keyword_result.all()
+
+        # 3. Reciprocal Rank Fusion (RRF)
+        # score = sum(1 / (k + rank))
+        k = 60
+        scores = {} # (chunk_id, doc_id) -> float
+        id_map = {} # (chunk_id, doc_id) -> (DocumentChunk, Document)
+        
+        for rank, (chunk, doc, _) in enumerate(vector_rows):
+            key = (chunk.id, doc.id)
+            scores[key] = scores.get(key, 0) + (1.0 / (k + rank))
+            id_map[key] = (chunk, doc)
+            
+        for rank, (chunk, doc, _) in enumerate(keyword_rows):
+            key = (chunk.id, doc.id)
+            scores[key] = scores.get(key, 0) + (1.0 / (k + rank))
+            id_map[key] = (chunk, doc)
+
+        # Sort by RRF score descending
+        sorted_keys = sorted(scores.keys(), key=lambda x: scores[x], reverse=True)[:limit]
+        
+        return [(id_map[key][0], id_map[key][1], float(scores[key])) for key in sorted_keys]

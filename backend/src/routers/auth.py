@@ -10,7 +10,7 @@ from src.core.database import get_db
 from src.core.rate_limit import limiter
 from src.domain.models import User
 from src.repositories.users import UserRepository
-from src.schemas.auth import TokenResponse, UserCreate, UserRead
+from src.schemas.auth import TokenResponse, UserCreate, UserRead, UserUpdate
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -64,3 +64,27 @@ async def login(
 @router.get("/me", response_model=UserRead)
 async def me(current_user: Annotated[User, Depends(get_current_user)]) -> User:
     return current_user
+
+
+@router.patch("/me", response_model=UserRead)
+async def update_me(
+    payload: UserUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> User:
+    updates: dict[str, object] = {}
+    if "display_name" in payload.model_fields_set:
+        updates["display_name"] = payload.display_name
+    if "theme_preference" in payload.model_fields_set:
+        updates["theme_preference"] = payload.theme_preference
+    if "default_home_tab" in payload.model_fields_set:
+        updates["default_home_tab"] = payload.default_home_tab
+    if "sidebar_collapsed" in payload.model_fields_set:
+        updates["sidebar_collapsed"] = payload.sidebar_collapsed
+    if "new_chat_scope_mode" in payload.model_fields_set:
+        updates["new_chat_scope_mode"] = payload.new_chat_scope_mode
+
+    if not updates:
+        return current_user
+
+    return await UserRepository(db).update(current_user, **updates)

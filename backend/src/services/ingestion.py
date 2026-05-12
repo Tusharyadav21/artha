@@ -81,10 +81,57 @@ def chunk_text(text: str, chunk_words: int = 260, overlap_words: int = 40) -> li
     return chunks
 
 
-async def embed_chunks(chunks: list[str]) -> list[tuple[str, list[float], dict]]:
+def chunk_text_hierarchical(
+    text: str,
+    child_words: int = 60,
+    parent_words: int = 300,
+    child_overlap: int = 10,
+    parent_overlap: int = 50,
+) -> list[tuple[str, str]]:
+    """
+    Returns (child_chunk, parent_chunk) pairs.
+    Child chunks (~60 words) are embedded for precise vector retrieval.
+    Parent chunks (~300 words) are stored in metadata and expanded at query time for richer context.
+    """
+    words = text.split()
+    if not words:
+        return []
+
+    parent_step = max(parent_words - parent_overlap, 1)
+    child_step = max(child_words - child_overlap, 1)
+    result: list[tuple[str, str]] = []
+    seen_children: set[str] = set()
+
+    for p_start in range(0, len(words), parent_step):
+        p_end = min(p_start + parent_words, len(words))
+        parent_text = " ".join(words[p_start:p_end]).strip()
+        if not parent_text:
+            break
+
+        parent_slice = words[p_start:p_end]
+        for c_start in range(0, len(parent_slice), child_step):
+            c_end = min(c_start + child_words, len(parent_slice))
+            child_text = " ".join(parent_slice[c_start:c_end]).strip()
+            if child_text and child_text not in seen_children:
+                seen_children.add(child_text)
+                result.append((child_text, parent_text))
+            if c_end >= len(parent_slice):
+                break
+
+        if p_end >= len(words):
+            break
+
+    return result
+
+
+async def embed_chunks(chunks: list[tuple[str, str]]) -> list[tuple[str, list[float], dict]]:
+    """
+    chunks: list of (child_content, parent_content) from chunk_text_hierarchical.
+    Embeds the child content; stores parent_content in metadata for context expansion at query time.
+    """
     ollama = OllamaClient()
     embedded: list[tuple[str, list[float], dict]] = []
-    for index, chunk in enumerate(chunks):
-        embedding = await ollama.embed(chunk)
-        embedded.append((chunk, embedding, {"chunk_index": index}))
+    for index, (child, parent) in enumerate(chunks):
+        embedding = await ollama.embed(child)
+        embedded.append((child, embedding, {"chunk_index": index, "parent_content": parent}))
     return embedded

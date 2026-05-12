@@ -2,10 +2,13 @@ FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 WORKDIR /app
 
+# PyTorch wheels for CPU-only inference (sentence-transformers for reranking).
+# Using CPU-only to avoid GPU bloat in containerized deployments.
 ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    UV_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu
 
 COPY pyproject.toml ./
 COPY uv.lock* ./

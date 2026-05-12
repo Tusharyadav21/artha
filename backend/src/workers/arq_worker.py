@@ -6,7 +6,7 @@ from arq.connections import RedisSettings
 from src.core.config import get_settings
 from src.core.database import AsyncSessionLocal
 from src.repositories.documents import DocumentRepository
-from src.services.ingestion import chunk_text, embed_chunks, parse_document_bytes
+from src.services.ingestion import chunk_text_hierarchical, embed_chunks, parse_document_bytes
 
 logger = getLogger(__name__)
 
@@ -39,7 +39,7 @@ async def process_document(ctx: dict, document_id: str) -> None:
                 document.filename,
             )
             logger.debug(f"Document {document_id}: parsed, {len(text)} chars")
-            chunks = chunk_text(text)
+            chunks = chunk_text_hierarchical(text)
             logger.debug(f"Document {document_id}: created {len(chunks)} chunks")
             embedded_chunks = await embed_chunks(chunks)
             logger.debug(f"Document {document_id}: embedded {len(embedded_chunks)} chunks")
