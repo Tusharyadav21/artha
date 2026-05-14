@@ -4,9 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-ThemePreference = Literal["system", "light", "dark"]
-DefaultHomeTab = Literal["chat", "library", "settings"]
-NewChatScopeMode = Literal["clear", "remember", "all-completed"]
+from src.domain.models import HomeTab, ThemePreference, ChatScopeMode
 
 
 class UserCreate(BaseModel):
@@ -32,9 +30,9 @@ class UserRead(BaseModel):
     email: str
     display_name: str | None
     theme_preference: ThemePreference
-    default_home_tab: DefaultHomeTab
+    default_home_tab: HomeTab
     sidebar_collapsed: bool
-    new_chat_scope_mode: NewChatScopeMode
+    new_chat_scope_mode: ChatScopeMode
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -43,9 +41,9 @@ class UserRead(BaseModel):
 class UserUpdate(BaseModel):
     display_name: str | None = Field(default=None, max_length=120)
     theme_preference: ThemePreference | None = None
-    default_home_tab: DefaultHomeTab | None = None
+    default_home_tab: HomeTab | None = None
     sidebar_collapsed: bool | None = None
-    new_chat_scope_mode: NewChatScopeMode | None = None
+    new_chat_scope_mode: ChatScopeMode | None = None
 
     @field_validator("display_name")
     @classmethod
@@ -75,3 +73,17 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserRead
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(pattern=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8, max_length=128)

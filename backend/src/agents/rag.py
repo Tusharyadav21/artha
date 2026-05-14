@@ -43,6 +43,9 @@ class RagState(TypedDict):
     system_prompt: str | None
     chunk_limit: int
     low_confidence: bool
+    model_name: str | None
+    num_ctx: int | None
+    num_predict: int | None
 
 
 DEFAULT_SYSTEM_PROMPT = (
@@ -104,7 +107,12 @@ def build_rag_graph(db: AsyncSession):
             "Standalone Query:"
         )
         try:
-            standalone = await OllamaClient().generate(prompt)
+            standalone = await OllamaClient().generate(
+                prompt,
+                model_name=state.get("model_name"),
+                num_ctx=state.get("num_ctx"),
+                num_predict=state.get("num_predict"),
+            )
             search_query = standalone.strip() or state["question"]
         except Exception:
             search_query = state["question"]
@@ -237,6 +245,9 @@ async def prepare_rag_context(
     conversation_id: UUID,
     question: str,
     document_ids: list[UUID] | None = None,
+    model_name: str | None = None,
+    num_ctx: int | None = None,
+    num_predict: int | None = None,
 ) -> RagState:
     project = await db.get(Project, project_id)
     system_prompt = project.system_prompt if project else None
@@ -269,6 +280,9 @@ async def prepare_rag_context(
             "system_prompt": system_prompt,
             "chunk_limit": 5,
             "low_confidence": False,
+            "model_name": model_name,
+            "num_ctx": num_ctx,
+            "num_predict": num_predict,
         },
         config={"configurable": {"thread_id": str(conversation_id)}},
     )

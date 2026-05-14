@@ -62,30 +62,53 @@ graph TD
 
 ## 🚀 Quick Start (Docker)
 
-Get up and running in minutes with Docker Compose.
+The easiest way to get up and running is using the premium interactive launcher script [run.sh](file:///Users/tusharyadav/Dev/agentic_rag/run.sh). It automatically performs essential pre-checks (Docker daemon status, `.env` file presence, Ollama connectivity, and model availability), starts services, and runs database migrations.
 
-### 1. Environment Setup
+### Interactive Startup
 ```bash
-cp .env.example .env
+./run.sh
 ```
 
-### 2. Prepare Local LLMs (Ollama)
-Ensure [Ollama](https://ollama.com) is installed and running on your host machine:
-```bash
-ollama serve &
-ollama pull qwen2.5:3b
-ollama pull nomic-embed-text
-```
+Choose **Option 1** (or **Option 2** for rebuild) to start the stack, wait for services to be healthy, and automatically run database migrations.
 
-### 3. Launch Stack
-```bash
-docker compose up --build -d
-```
+---
 
-### 4. Database Initialization
-```bash
-docker compose exec backend alembic upgrade head
-```
+### Launcher CLI Reference
+You can bypass the menu by passing commands directly to the script:
+- **Start Stack**: `./run.sh up` (or `./run.sh up --build` to rebuild)
+- **Stop Stack**: `./run.sh down`
+- **Restart Stack**: `./run.sh restart`
+- **Check Status**: `./run.sh status`
+- **Tail Logs**: `./run.sh logs` (or `./run.sh logs backend` for a specific service)
+- **Migrate Database**: `./run.sh migrate`
+- **Deep Clean Stack**: `./run.sh clean` (removes containers and volumes for a fresh start)
+
+---
+
+### Manual Launch (Without Script)
+If you prefer running raw Docker Compose commands:
+
+1. **Environment Setup**:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Prepare Local LLMs (Ollama)**:
+   Ensure [Ollama](https://ollama.com) is running on your host machine:
+   ```bash
+   ollama pull qwen2.5:3b
+   ollama pull nomic-embed-text
+   ```
+
+3. **Launch Stack**:
+   ```bash
+   docker compose up --build -d
+   ```
+
+4. **Database Initialization**:
+   ```bash
+   docker compose exec backend alembic upgrade head
+   ```
 
 **Services:**
 - **Frontend**: [http://localhost:3000](http://localhost:3000)

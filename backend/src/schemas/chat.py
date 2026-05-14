@@ -2,12 +2,16 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+from src.domain.models import MessageRole
 
 
 class ChatRequest(BaseModel):
     conversation_id: UUID | None = None
     message: str = Field(min_length=1, max_length=4000)
     document_ids: list[UUID] | None = None
+    model: str | None = None
+    num_ctx: int | None = None
+    num_predict: int | None = None
 
 
 class FeedbackRequest(BaseModel):
@@ -29,7 +33,7 @@ class ConversationRead(BaseModel):
 class MessageRead(BaseModel):
     id: UUID
     conversation_id: UUID
-    role: str
+    role: MessageRole
     content: str
     metadata_: dict
     created_at: datetime

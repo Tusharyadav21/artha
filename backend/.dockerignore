@@ -5,6 +5,11 @@ __pycache__
 .pytest_cache
 .ruff_cache
 .git
+.gitignore
 .env
-.env.local
+.env.*
 tests
+Dockerfile
+.dockerignore
+README.md
+docs

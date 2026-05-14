@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domain.models import Document, DocumentChunk
+from src.domain.models import Document, DocumentChunk, DocumentStatus
 
 logger = getLogger(__name__)
 
@@ -29,7 +29,7 @@ class DocumentRepository:
             source_bytes=source_bytes,
             file_size=len(source_bytes),
             content_sha256=content_sha256,
-            status="pending",
+            status=DocumentStatus.PENDING,
         )
         self.db.add(document)
         await self.db.commit()
@@ -78,7 +78,7 @@ class DocumentRepository:
     async def set_status(
         self,
         document: Document,
-        status: str,
+        status: DocumentStatus,
         error_message: str | None = None,
         processed: bool = False,
     ) -> Document:
@@ -124,7 +124,7 @@ class DocumentRepository:
         vector_query = (
             select(DocumentChunk, Document, distance)
             .join(Document, DocumentChunk.document_id == Document.id)
-            .where(Document.project_id == project_id, Document.status == "completed")
+            .where(Document.project_id == project_id, Document.status == DocumentStatus.COMPLETED)
         )
         if document_ids:
             vector_query = vector_query.where(Document.id.in_(document_ids))
@@ -139,8 +139,8 @@ class DocumentRepository:
             keyword_query = (
                 select(DocumentChunk, Document, similarity)
                 .join(Document, DocumentChunk.document_id == Document.id)
-                .where(Document.project_id == project_id, Document.status == "completed")
-                .where(DocumentChunk.content.op("%%")(query_text)) # Use trigram match
+                .where(Document.project_id == project_id, Document.status == DocumentStatus.COMPLETED)
+                .where(DocumentChunk.content.op("%")(query_text)) # Use trigram match
             )
             if document_ids:
                 keyword_query = keyword_query.where(Document.id.in_(document_ids))

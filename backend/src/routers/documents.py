@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.dependencies import get_current_user
 from src.core.config import get_settings
 from src.core.database import get_db
-from src.domain.models import User
+from src.domain.models import User, DocumentStatus
 from src.repositories.documents import DocumentRepository
 from src.repositories.projects import ProjectRepository
 from src.schemas.documents import DocumentRead, PaginatedDocuments
@@ -102,6 +102,7 @@ async def upload_document(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
     file: Annotated[UploadFile, File()],
+    embed_model: str | None = None,
 ):
     await _ensure_project(db, project_id, current_user.id)
     await _validate_upload_file(file)
@@ -118,11 +119,11 @@ async def upload_document(
     repository = DocumentRepository(db)
     redis = await create_pool(RedisSettings.from_dsn(get_settings().redis_url))
     try:
-        job = await redis.enqueue_job("process_document", str(document.id))
+        job = await redis.enqueue_job("process_document", str(document.id), embed_model=embed_model)
         if job is None:
             await repository.set_status(
                 document,
-                "failed",
+                DocumentStatus.FAILED,
                 error_message="Could not enqueue document processing job",
                 processed=True,
             )

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.domain.models import Conversation, Message
+from src.domain.models import Conversation, Message, MessageRole
 
 
 class ConversationRepository:
@@ -54,7 +54,7 @@ class ConversationRepository:
     async def add_message(
         self,
         conversation_id: UUID,
-        role: str,
+        role: MessageRole,
         content: str,
         metadata: dict | None = None,
     ) -> Message:

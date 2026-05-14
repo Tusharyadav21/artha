@@ -5,6 +5,7 @@ import { useTheme } from "next-themes"
 
 import { toast } from "@/components/ui/toast"
 import { ACTIVE_PROJECT_KEY, TOKEN_KEY } from "@/lib/app-storage"
+import { removeCookie, setCookie, getCookie } from "@/lib/cookies"
 import {
   apiFetch,
   apiUrl,
@@ -58,7 +59,7 @@ interface WorkspaceContextValue {
   hasScopedDocuments: boolean
   signOut: () => void
   refreshSession: () => Promise<void>
-  createProject: (name: string) => Promise<void>
+  createProject: (name: string) => Promise<Project | undefined>
   selectProject: (
     projectId: string,
     options?: { documentIds?: string[] }
@@ -66,7 +67,7 @@ interface WorkspaceContextValue {
   loadMoreDocuments: () => Promise<void>
   loadMoreConversations: () => Promise<void>
   listProjectDocuments: (projectId: string) => Promise<DocumentItem[]>
-  uploadDocument: (file: File) => Promise<void>
+  uploadDocument: (file: File, projectId?: string) => Promise<void>
   openConversation: (conversationId: string) => Promise<void>
   prepareNewChat: (config: {
     projectId: string
@@ -209,6 +210,7 @@ export function WorkspaceProvider({
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(TOKEN_KEY)
       window.localStorage.removeItem(ACTIVE_PROJECT_KEY)
+      removeCookie(TOKEN_KEY)
     }
     setToken(null)
     clearWorkspaceState()
@@ -332,6 +334,12 @@ export function WorkspaceProvider({
   }, [refreshSession])
 
   React.useEffect(() => {
+    if (token && !getCookie(TOKEN_KEY)) {
+      setCookie(TOKEN_KEY, token)
+    }
+  }, [token])
+
+  React.useEffect(() => {
     if (!user?.theme_preference) {
       return
     }
@@ -409,6 +417,7 @@ export function WorkspaceProvider({
         setProjects((current) => [project, ...current])
         await selectProject(project.id)
         toast.success("Project created")
+        return project
       } catch (caught) {
         toast.error(
           caught instanceof Error ? caught.message : "Could not create project"
@@ -421,8 +430,9 @@ export function WorkspaceProvider({
   )
 
   const uploadDocument = React.useCallback(
-    async (file: File) => {
-      if (!activeProjectId) {
+    async (file: File, projectId?: string) => {
+      const targetProjectId = projectId || activeProjectId
+      if (!targetProjectId) {
         return
       }
 
@@ -431,15 +441,17 @@ export function WorkspaceProvider({
         const formData = new FormData()
         formData.set("file", file)
         const document = await authedFetch<DocumentItem>(
-          `/api/projects/${activeProjectId}/documents`,
+          `/api/projects/${targetProjectId}/documents`,
           {
             method: "POST",
             body: formData,
           }
         )
-        setDocuments((current) => [document, ...current])
-        setDocumentsTotal((total) => total + 1)
-        toast.success("Document uploaded successfully")
+        if (targetProjectId === activeProjectId) {
+          setDocuments((current) => [document, ...current])
+          setDocumentsTotal((total) => total + 1)
+        }
+        toast.success(`Uploaded ${file.name}`)
       } catch (caught) {
         toast.error(caught instanceof Error ? caught.message : "Upload failed")
       } finally {

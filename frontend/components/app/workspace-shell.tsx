@@ -2,22 +2,18 @@
 
 import * as React from "react"
 import {
-  BotIcon,
-  FolderPlusIcon,
-  LibraryIcon,
   LogOutIcon,
   MenuIcon,
   MessageSquarePlusIcon,
   MonitorIcon,
   MoonStarIcon,
-  PanelLeftCloseIcon,
-  PanelLeftOpenIcon,
   SettingsIcon,
   SunMediumIcon,
 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 
 import { useWorkspace, WorkspaceProvider } from "@/components/app/workspace-provider"
+import { Sidebar } from "@/components/app/sidebar"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -30,35 +26,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { type DocumentItem } from "@/lib/api"
 import { cn } from "@/lib/utils"
-
-const NAV_ITEMS = [
-  {
-    href: "/chat",
-    label: "Chat",
-    description: "Conversations and sources",
-    icon: BotIcon,
-  },
-  {
-    href: "/library",
-    label: "Library",
-    description: "Documents and project prompt",
-    icon: LibraryIcon,
-  },
-  {
-    href: "/settings",
-    label: "Settings",
-    description: "Profile and preferences",
-    icon: SettingsIcon,
-  },
-] as const
 
 function nextThemePreference(current: "system" | "light" | "dark") {
   if (current === "system") {
@@ -97,197 +69,6 @@ function pageMeta(pathname: string) {
     title: "Chat workspace",
     description: "Ask questions, review sources, and keep project conversations flowing.",
   }
-}
-
-function WorkspaceSidebar({
-  mobile = false,
-  onNavigate,
-}: {
-  mobile?: boolean
-  onNavigate?: () => void
-}) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const {
-    user,
-    projects,
-    activeProjectId,
-    isCreatingProject,
-    createProject,
-    selectProject,
-    updateUserSettings,
-  } = useWorkspace()
-  const [projectName, setProjectName] = React.useState("")
-
-  async function handleCreateProject(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const trimmedName = projectName.trim()
-    if (!trimmedName) {
-      return
-    }
-    await createProject(trimmedName)
-    setProjectName("")
-  }
-
-  const isCollapsed = !mobile && Boolean(user?.sidebar_collapsed)
-
-  return (
-    <aside
-      className={cn(
-        "flex h-full flex-col bg-sidebar/85 backdrop-blur",
-        mobile ? "w-full" : isCollapsed ? "w-20" : "w-80"
-      )}
-    >
-      <div className="flex items-center gap-3 px-4 py-4">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-          <BotIcon data-icon="inline-start" />
-        </div>
-        {!isCollapsed ? (
-          <div className="min-w-0 flex-1">
-            <p className="font-medium">Agentic RAG</p>
-            <p className="truncate text-xs text-muted-foreground">
-              Route-based workspace
-            </p>
-          </div>
-        ) : null}
-        {!mobile ? (
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            onClick={() =>
-              void updateUserSettings({
-                sidebar_collapsed: !user?.sidebar_collapsed,
-              })
-            }
-          >
-            {isCollapsed ? (
-              <PanelLeftOpenIcon data-icon="inline-start" />
-            ) : (
-              <PanelLeftCloseIcon data-icon="inline-start" />
-            )}
-          </Button>
-        ) : null}
-      </div>
-
-      <div className="px-4">
-        <form className="flex gap-2" onSubmit={handleCreateProject}>
-          <Input
-            value={projectName}
-            onChange={(event) => setProjectName(event.target.value)}
-            placeholder={isCollapsed && !mobile ? "New" : "New project"}
-            className={cn(isCollapsed && !mobile ? "px-2 text-center" : "")}
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={isCreatingProject}
-            aria-label="Create project"
-          >
-            <FolderPlusIcon data-icon="inline-start" />
-          </Button>
-        </form>
-      </div>
-
-      <div className="flex flex-col gap-1 px-3 py-4">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon
-          const isActive = pathname.startsWith(item.href)
-
-          return (
-            <Button
-              key={item.href}
-              type="button"
-              variant={isActive ? "secondary" : "ghost"}
-              className={cn(
-                "justify-start",
-                isCollapsed && !mobile ? "px-0" : "px-3"
-              )}
-              onClick={() => {
-                router.push(item.href)
-                onNavigate?.()
-              }}
-            >
-              <Icon data-icon="inline-start" />
-              {!isCollapsed ? item.label : null}
-            </Button>
-          )
-        })}
-      </div>
-
-      <Separator />
-
-      <div className="px-4 py-3">
-        {!isCollapsed ? (
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            Projects
-          </p>
-        ) : null}
-      </div>
-
-      <ScrollArea className="flex-1 px-3 pb-4">
-        <div className="flex flex-col gap-2">
-          {projects.map((project) => (
-            <button
-              key={project.id}
-              type="button"
-              className={cn(
-                "rounded-xl border px-3 py-3 text-left transition",
-                project.id === activeProjectId
-                  ? "border-primary/25 bg-primary/10"
-                  : "border-transparent hover:border-border hover:bg-background/70",
-                isCollapsed && !mobile
-                  ? "flex items-center justify-center px-2"
-                  : "flex flex-col gap-1"
-              )}
-              onClick={() => {
-                void selectProject(project.id)
-                onNavigate?.()
-              }}
-            >
-              {isCollapsed && !mobile ? (
-                <span className="text-sm font-semibold">
-                  {project.name.slice(0, 1).toUpperCase()}
-                </span>
-              ) : (
-                <>
-                  <span className="font-medium">{project.name}</span>
-                  <span className="line-clamp-2 text-xs text-muted-foreground">
-                    {project.system_prompt || "Using the default agent prompt."}
-                  </span>
-                </>
-              )}
-            </button>
-          ))}
-          {!projects.length ? (
-            <div className="rounded-xl border border-dashed px-3 py-4 text-sm text-muted-foreground">
-              Create your first project to start using the workspace.
-            </div>
-          ) : null}
-        </div>
-      </ScrollArea>
-
-      <Separator />
-
-      <div className="px-4 py-4">
-        {!isCollapsed ? (
-          <>
-            <p className="truncate text-sm font-medium">
-              {user?.display_name || "Workspace owner"}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {user?.email}
-            </p>
-          </>
-        ) : (
-          <div className="flex items-center justify-center rounded-full border bg-background/60 py-2 text-xs font-medium">
-            {user?.email.slice(0, 1).toUpperCase()}
-          </div>
-        )}
-      </div>
-    </aside>
-  )
 }
 
 function NewChatDialog({
@@ -365,32 +146,32 @@ function NewChatDialogBody({
     async function loadDocuments() {
       setIsLoadingDocuments(true)
       const items = await listProjectDocuments(projectId)
-        if (isCancelled) {
-          return
-        }
-        const completed = items.filter((item) => item.status === "completed")
-        setDocuments(completed)
+      if (isCancelled) {
+        return
+      }
+      const completed = items.filter((item) => item.status === "completed")
+      setDocuments(completed)
 
-        if (scopeMode === "remember" && projectId === activeProjectId) {
-          setCheckedDocumentIds(
-            selectedDocumentIds.filter((id) =>
-              completed.some((document) => document.id === id)
-            )
+      if (scopeMode === "remember" && projectId === activeProjectId) {
+        setCheckedDocumentIds(
+          selectedDocumentIds.filter((id) =>
+            completed.some((document) => document.id === id)
           )
-          return
-        }
-        if (scopeMode === "all-completed") {
-          setCheckedDocumentIds(completed.map((document) => document.id))
-          return
-        }
-        setCheckedDocumentIds([])
+        )
+        return
+      }
+      if (scopeMode === "all-completed") {
+        setCheckedDocumentIds(completed.map((document) => document.id))
+        return
+      }
+      setCheckedDocumentIds([])
     }
 
     void loadDocuments().finally(() => {
-        if (!isCancelled) {
-          setIsLoadingDocuments(false)
-        }
-      })
+      if (!isCancelled) {
+        setIsLoadingDocuments(false)
+      }
+    })
 
     return () => {
       isCancelled = true
@@ -551,11 +332,7 @@ function WorkspaceFrame({ children }: React.PropsWithChildren) {
   const [isNewChatOpen, setIsNewChatOpen] = React.useState(false)
   const meta = pageMeta(pathname)
 
-  React.useEffect(() => {
-    if (!isLoadingSession && !token) {
-      router.replace("/auth")
-    }
-  }, [isLoadingSession, router, token])
+
 
   if (isLoadingSession || !user) {
     return (
@@ -584,7 +361,7 @@ function WorkspaceFrame({ children }: React.PropsWithChildren) {
     <main className="min-h-svh bg-[radial-gradient(circle_at_top_left,var(--color-primary)/10,transparent_28rem)]">
       <div className="flex min-h-svh">
         <div className="hidden border-r border-sidebar-border lg:block">
-          <WorkspaceSidebar />
+          <Sidebar />
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
@@ -668,7 +445,7 @@ function WorkspaceFrame({ children }: React.PropsWithChildren) {
           <SheetHeader className="sr-only">
             <SheetTitle>Workspace navigation</SheetTitle>
           </SheetHeader>
-          <WorkspaceSidebar mobile onNavigate={() => setIsMobileSidebarOpen(false)} />
+          <Sidebar mobile onNavigate={() => setIsMobileSidebarOpen(false)} />
         </SheetContent>
       </Sheet>
 

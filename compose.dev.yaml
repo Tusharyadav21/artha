@@ -1,0 +1,72 @@
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  langfuse:
+    ports:
+      - "3001:3000"
+
+  backend:
+    build:
+      target: dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/alembic:/app/alembic
+      - ./backend/alembic.ini:/app/alembic.ini
+    environment:
+      LOG_LEVEL: DEBUG
+    # Optional: ensure uvicorn runs with reload in dev if not already in Dockerfile CMD
+    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  worker:
+    build:
+      target: dev
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/alembic:/app/alembic
+      - ./backend/alembic.ini:/app/alembic.ini
+    environment:
+      LOG_LEVEL: DEBUG
+    command: ["watchfiles", "arq src.workers.arq_worker.WorkerSettings"]
+
+
+  frontend:
+    build:
+      target: dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NODE_ENV: development
+
+  # Dev Tools
+  pgadmin:
+    image: dpage/pgadmin4
+    profiles: ["dev"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - internal
+      - public
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    profiles: ["dev"]
+    ports:
+      - "8001:8001"
+    networks:
+      - internal
+      - public

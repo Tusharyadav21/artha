@@ -52,23 +52,20 @@ export function LibraryView() {
   const [activeTab, setActiveTab] = React.useState("documents")
 
   return (
-    <Tabs className="gap-4">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
       <TabsList className="w-fit">
-        <TabsTrigger active={activeTab === "documents"} onClick={() => setActiveTab("documents")}>
+        <TabsTrigger value="documents">
           Documents
         </TabsTrigger>
-        <TabsTrigger
-          active={activeTab === "conversations"}
-          onClick={() => setActiveTab("conversations")}
-        >
+        <TabsTrigger value="conversations">
           Conversations
         </TabsTrigger>
-        <TabsTrigger active={activeTab === "prompt"} onClick={() => setActiveTab("prompt")}>
+        <TabsTrigger value="prompt">
           Project Prompt
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent hidden={activeTab !== "documents"}>
+      <TabsContent value="documents">
         <Card>
           <CardHeader>
             <CardTitle>Documents</CardTitle>
@@ -171,7 +168,7 @@ export function LibraryView() {
         </Card>
       </TabsContent>
 
-      <TabsContent hidden={activeTab !== "conversations"}>
+      <TabsContent value="conversations">
         <Card>
           <CardHeader>
             <CardTitle>Conversation history</CardTitle>
@@ -226,7 +223,7 @@ export function LibraryView() {
         </Card>
       </TabsContent>
 
-      <TabsContent hidden={activeTab !== "prompt"}>
+      <TabsContent value="prompt">
         <Card>
           <CardHeader>
             <CardTitle>Project prompt</CardTitle>

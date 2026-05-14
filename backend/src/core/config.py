@@ -31,11 +31,11 @@ class Settings(BaseSettings):
         description="Ollama server base URL",
     )
     ollama_model_reasoner: str = Field(
-        default="qwen2.5:3b",
+        default="qwen2.5:7b",
         description="Model name for reasoning",
     )
     ollama_model_planner: str = Field(
-        default="qwen2.5:3b",
+        default="qwen2.5:7b",
         description="Model name for planning",
     )
     ollama_model_embed: str = Field(
@@ -80,7 +80,7 @@ class Settings(BaseSettings):
     )
 
     langfuse_host: str | None = Field(
-        default=None,
+        default="http://localhost:3001",
         description="Langfuse host URL",
     )
     langfuse_public_key: str | None = Field(

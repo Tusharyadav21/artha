@@ -21,23 +21,20 @@ export function SettingsView() {
   const [activeTab, setActiveTab] = React.useState("profile")
 
   return (
-    <Tabs className="gap-4">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
       <TabsList className="w-fit">
-        <TabsTrigger active={activeTab === "profile"} onClick={() => setActiveTab("profile")}>
+        <TabsTrigger value="profile">
           Profile
         </TabsTrigger>
-        <TabsTrigger
-          active={activeTab === "appearance"}
-          onClick={() => setActiveTab("appearance")}
-        >
+        <TabsTrigger value="appearance">
           Appearance
         </TabsTrigger>
-        <TabsTrigger active={activeTab === "chat"} onClick={() => setActiveTab("chat")}>
+        <TabsTrigger value="chat">
           Chat Defaults
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent hidden={activeTab !== "profile"}>
+      <TabsContent value="profile">
         <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>
@@ -58,7 +55,7 @@ export function SettingsView() {
         </Card>
       </TabsContent>
 
-      <TabsContent hidden={activeTab !== "appearance"}>
+      <TabsContent value="appearance">
         <Card>
           <CardHeader>
             <CardTitle>Appearance</CardTitle>
@@ -79,7 +76,7 @@ export function SettingsView() {
         </Card>
       </TabsContent>
 
-      <TabsContent hidden={activeTab !== "chat"}>
+      <TabsContent value="chat">
         <Card>
           <CardHeader>
             <CardTitle>Chat defaults</CardTitle>

@@ -86,6 +86,23 @@ export interface ChatRequest {
   conversation_id?: string | null
   message: string
   document_ids?: string[] | null
+  model?: string | null
+  num_ctx?: number | null
+  num_predict?: number | null
+}
+
+export interface ChangePasswordRequest {
+  current_password: string
+  new_password: string
+}
+
+export interface ForgotPasswordRequest {
+  email: string
+}
+
+export interface ResetPasswordRequest {
+  token: string
+  new_password: string
 }
 
 export interface FeedbackRequest {

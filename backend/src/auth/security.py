@@ -46,6 +46,25 @@ def decode_access_token(token: str) -> UUID | None:
     settings = get_settings()
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        if payload.get("purpose") == "password_reset":
+            return None # Don't allow reset tokens to be used as access tokens
+        subject = payload.get("sub")
+        return UUID(subject) if subject else None
+    except (JWTError, ValueError, TypeError):
+        return None
+
+def create_reset_token(user_id: UUID) -> str:
+    settings = get_settings()
+    expires_at = datetime.now(UTC) + timedelta(minutes=15) # Short expiry for reset
+    payload = {"sub": str(user_id), "exp": expires_at, "purpose": "password_reset"}
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+
+def decode_reset_token(token: str) -> UUID | None:
+    settings = get_settings()
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        if payload.get("purpose") != "password_reset":
+            return None
         subject = payload.get("sub")
         return UUID(subject) if subject else None
     except (JWTError, ValueError, TypeError):

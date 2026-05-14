@@ -124,7 +124,10 @@ def chunk_text_hierarchical(
     return result
 
 
-async def embed_chunks(chunks: list[tuple[str, str]]) -> list[tuple[str, list[float], dict]]:
+async def embed_chunks(
+    chunks: list[tuple[str, str]],
+    embed_model: str | None = None,
+) -> list[tuple[str, list[float], dict]]:
     """
     chunks: list of (child_content, parent_content) from chunk_text_hierarchical.
     Embeds the child content; stores parent_content in metadata for context expansion at query time.
@@ -132,6 +135,6 @@ async def embed_chunks(chunks: list[tuple[str, str]]) -> list[tuple[str, list[fl
     ollama = OllamaClient()
     embedded: list[tuple[str, list[float], dict]] = []
     for index, (child, parent) in enumerate(chunks):
-        embedding = await ollama.embed(child)
+        embedding = await ollama.embed(child, model_name=embed_model)
         embedded.append((child, embedding, {"chunk_index": index, "parent_content": parent}))
     return embedded

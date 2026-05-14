@@ -65,41 +65,71 @@ class OllamaClient:
 
         raise last_error or httpx.RequestError("Unknown error")
 
-    async def embed(self, text: str) -> list[float]:
+    async def embed(self, text: str, model_name: str | None = None) -> list[float]:
         """Generate embedding with retry logic."""
         response = await self._request_with_retry(
             method="POST",
             endpoint="/api/embeddings",
             json_data={
-                "model": self.settings.ollama_model_embed,
+                "model": model_name or self.settings.ollama_model_embed,
                 "prompt": text,
             },
         )
         data = response.json()
         return list(data["embedding"])
 
-    async def generate(self, prompt: str) -> str:
+    async def generate(
+        self,
+        prompt: str,
+        model_name: str | None = None,
+        num_ctx: int | None = None,
+        num_predict: int | None = None,
+        format: str | None = None,
+    ) -> str:
         """Generate non-streaming LLM completion with retry logic."""
+        json_payload = {
+            "model": model_name or self.settings.ollama_model_reasoner,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "num_ctx": num_ctx or self.settings.ollama_num_ctx,
+                "num_predict": num_predict or self.settings.ollama_num_predict,
+            },
+        }
+        if format:
+            json_payload["format"] = format
+
         response = await self._request_with_retry(
             method="POST",
             endpoint="/api/generate",
-            json_data={
-                "model": self.settings.ollama_model_reasoner,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "num_ctx": self.settings.ollama_num_ctx,
-                    "num_predict": self.settings.ollama_num_predict,
-                },
-            },
+            json_data=json_payload,
         )
         data = response.json()
         return data.get("response", "").strip()
 
 
-    async def stream_generate(self, prompt: str) -> AsyncIterator[str]:
+    async def stream_generate(
+        self,
+        prompt: str,
+        model_name: str | None = None,
+        num_ctx: int | None = None,
+        num_predict: int | None = None,
+        format: str | None = None,
+    ) -> AsyncIterator[str]:
         """Stream LLM response with retry logic."""
         client = await self._get_client()
+
+        json_payload = {
+            "model": model_name or self.settings.ollama_model_reasoner,
+            "prompt": prompt,
+            "stream": True,
+            "options": {
+                "num_ctx": num_ctx or self.settings.ollama_num_ctx,
+                "num_predict": num_predict or self.settings.ollama_num_predict,
+            },
+        }
+        if format:
+            json_payload["format"] = format
 
         last_error: Exception | None = None
         for attempt in range(3):
@@ -107,15 +137,7 @@ class OllamaClient:
                 async with client.stream(
                     "POST",
                     f"{self.base_url}/api/generate",
-                    json={
-                        "model": self.settings.ollama_model_reasoner,
-                        "prompt": prompt,
-                        "stream": True,
-                        "options": {
-                            "num_ctx": self.settings.ollama_num_ctx,
-                            "num_predict": self.settings.ollama_num_predict,
-                        },
-                    },
+                    json=json_payload,
                 ) as response:
                     response.raise_for_status()
                     async for line in response.aiter_lines():
