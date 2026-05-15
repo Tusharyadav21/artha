@@ -11,6 +11,8 @@ from moviepy.video.VideoClip import ColorClip, ImageClip
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
 from moviepy.video import fx as vfx
+import re
+import ast
 from src.services.ollama import OllamaClient
 from logging import getLogger
 
@@ -80,6 +82,7 @@ class VideoGenService:
 
     def _parse_json(self, text: str) -> Dict[str, Any]:
         """Parse JSON from LLM response with cleanup and extraction."""
+        original_text = text
         text = text.strip()
         
         # 1. Extract from markdown fences if present
@@ -88,16 +91,27 @@ class VideoGenService:
         elif "```" in text:
             text = text.split("```")[1].split("```")[0].strip()
         
-        # 2. Find first { and last } if still not valid
+        # 2. Find first { and last } 
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1:
+            text = text[start:end+1]
+        
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            start = text.find("{")
-            end = text.rfind("}")
-            if start != -1 and end != -1:
-                text = text[start:end+1]
-                return json.loads(text)
-            raise
+            # 3. Attempt to fix common issues: single quotes instead of double quotes
+            # ast.literal_eval is safer than regex for single-quoted Python-like dicts
+            try:
+                return ast.literal_eval(text)
+            except Exception:
+                try:
+                    # Final fallback: naive regex replacement
+                    fixed_text = re.sub(r"'(.*?)'", r'"\1"', text)
+                    return json.loads(fixed_text)
+                except Exception:
+                    logger.error(f"Failed to parse JSON from LLM. Raw text: {original_text}")
+                    raise
 
     async def synthesize_voice(self, text: str, voice: str = "af_heart", speed: float = 1.1) -> str:
         output_path = self.output_dir / "audio.wav"
@@ -106,7 +120,7 @@ class VideoGenService:
         words = text.split()
         duration_secs = max(5.0, len(words) / (150 / 60))
         
-        logger.info(f"Synthesizing voice (Mock): {len(words)} words, estimated duration {duration_secs:.2f}s")
+        logger.debug(f"Synthesizing voice (Mock): {len(words)} words, estimated duration {duration_secs:.2f}s")
         
         # Generate silence instead of noise to avoid "heeez" sound
         sample_rate = 44100
@@ -148,42 +162,95 @@ class VideoGenService:
 
     async def assemble_video(self, timeline: Dict[str, Any], output_name: str = "final_short.mp4") -> str:
         output_path = self.output_dir / output_name
-        
+
         import subprocess
         import json
-        
+
         # Prepare the timeline data as JSON for Remotion
         props = json.dumps(timeline)
-        
+
         # Construct the Remotion render command
         cmd = [
-            "npx", "remotion", "render", 
+            "npx", "remotion", "render",
             "src/index.ts", "Short",
             str(output_path.absolute()),
-            "--props", props,
-            "--browser-executable", "/usr/bin/google-chrome"
+            "--props", props
         ]
-        
+
+        # Find browser executable
+        browser_path = self._find_browser()
+        if browser_path:
+            cmd.extend(["--browser-executable", browser_path])
+        else:
+            logger.warning("No browser executable found, Remotion may attempt to download one")
+
+
         logger.info(f"Starting Remotion render for {output_name}")
-        
+
         try:
-            # Run the command from the video-renderer directory
-            process = subprocess.Popen(
-                cmd,
-                cwd="/app/video-renderer",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            stdout, stderr = process.communicate()
-            
-            if process.returncode != 0:
+            # Run subprocess in thread pool to avoid blocking the event loop
+            def run_subprocess():
+                # Determine the video-renderer directory path
+                video_renderer_dir = Path(__file__).parent.parent.parent / "video-renderer"
+                logger.debug(f"Using video-renderer directory: {video_renderer_dir}")
+
+                if not video_renderer_dir.exists():
+                    raise Exception(f"video-renderer directory not found at {video_renderer_dir}")
+
+                process = subprocess.Popen(
+                    cmd,
+                    cwd=str(video_renderer_dir),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                stdout, stderr = process.communicate()
+                return process.returncode, stderr
+
+            returncode, stderr = await asyncio.to_thread(run_subprocess)
+
+            if returncode != 0:
                 logger.error(f"Remotion error: {stderr}")
                 raise Exception(f"Remotion rendering failed: {stderr}")
-            
+
             logger.info(f"Remotion render complete: {output_path}")
-            return f"outputs/{output_name}"
-            
+            return str(output_path)
         except Exception as e:
-            logger.error(f"Failed to execute Remotion: {str(e)}")
+            logger.error(f"Failed to assemble video: {str(e)}")
             raise
+            
+    def _find_browser(self) -> str | None:
+        """Find the Chrome/Chromium executable in common paths."""
+        # 1. Look in PLAYWRIGHT_BROWSERS_PATH
+        env_path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
+        search_paths = [Path(env_path)] if env_path else []
+        search_paths.append(Path("/ms-playwright"))
+        
+        for base_path in search_paths:
+            if not base_path.exists():
+                continue
+                
+            logger.debug(f"Searching for browser in {base_path}")
+            # Playwright structure: <browser>-<revision>/chrome-linux/chrome
+            # We search recursively for any file named 'chrome' or 'chromium'
+            for pattern in ["**/chrome", "**/chromium"]:
+                for p in base_path.glob(pattern):
+                    if p.is_file() and os.access(p, os.X_OK):
+                        logger.debug(f"Found browser executable: {p}")
+                        return str(p)
+        
+        # 2. Fallback to common system paths
+        fallbacks = [
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium-browser",
+            "/usr/bin/chromium",
+            "/usr/bin/chrome"
+        ]
+        for path in fallbacks:
+            p = Path(path)
+            if p.exists() and os.access(p, os.X_OK):
+                logger.debug(f"Found system browser: {p}")
+                return str(p)
+        
+        logger.error("No browser executable found in search paths or system fallbacks")
+        return None

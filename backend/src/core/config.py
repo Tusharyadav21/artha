@@ -49,7 +49,7 @@ class Settings(BaseSettings):
         le=131072,
     )
     ollama_num_predict: int = Field(
-        default=512,
+        default=2048,
         description="Maximum tokens to predict",
         ge=1,
         le=4096,

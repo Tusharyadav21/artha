@@ -13,3 +13,4 @@ Dockerfile
 .dockerignore
 README.md
 docs
+video-renderer/node_modules

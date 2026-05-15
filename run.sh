@@ -38,7 +38,7 @@ for arg in "$@"; do
     fi
     if [ "$arg" == "--dev-tools" ]; then
         PROFILES="--profile dev"
-        log_info "Including developer tools (pgAdmin, Redis Commander)..."
+        log_info "Including developer tools (RedisInsight)..."
     fi
 done
 
@@ -248,7 +248,7 @@ interactive_menu() {
         show_banner
         echo -e "${BOLD}${WHITE}Select an action to perform:${NC}"
         echo -e "  ${CYAN}1)${NC} 🚀 Start Stack (Build + Migrations + Logs)"
-        echo -e "  ${CYAN}2)${NC} 🛠️  Start Stack with Dev Tools (pgAdmin, Redis Commander)"
+        echo -e "  ${CYAN}2)${NC} 🛠️  Start Stack with Dev Tools (RedisInsight)"
         echo -e "  ${CYAN}3)${NC} 🛑 Stop Stack"
         echo -e "  ${CYAN}4)${NC} ♻️  Restart Stack"
         echo -e "  ${CYAN}5)${NC} 📊 Check Services Status (ps)"
@@ -259,7 +259,7 @@ interactive_menu() {
         echo ""
         read -p "Enter your choice (1-9): " choice
         echo ""
-        
+
         case $choice in
             1)
                 start_stack
@@ -302,13 +302,13 @@ interactive_menu() {
                     *) log_error "Invalid option" ;;
                 esac
                 ;;
-            6)
+            7)
                 run_migrations
                 ;;
-            7)
+            8)
                 clean_system
                 ;;
-            8)
+            9)
                 log_success "Goodbye!"
                 exit 0
                 ;;
@@ -317,7 +317,7 @@ interactive_menu() {
                 sleep 1.5
                 ;;
         esac
-        
+
         echo ""
         read -p "Press Enter to return to the menu..." dummy
     done

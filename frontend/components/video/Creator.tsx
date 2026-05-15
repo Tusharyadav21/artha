@@ -192,11 +192,10 @@ export function VideoCreator() {
                 </CardHeader>
                 <CardContent className="space-y-4 text-center">
                   <div className="aspect-[9/16] bg-black rounded-lg overflow-hidden">
-                    <video 
-                      src={apiUrl(videoUrl)} 
-                      controls 
+                    <video
+                      src={apiUrl(videoUrl)}
+                      controls
                       className="w-full h-full object-contain"
-                      poster={apiUrl(`/api/video/download?path=${imagePath}`)}
                     />
                   </div>
                   <Button className="w-full" onClick={() => window.location.href = apiUrl(videoUrl)}>

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 
 import { toast } from "@/components/ui/toast"
@@ -790,9 +791,12 @@ export function WorkspaceProvider({
     loadConversations,
   ])
 
+  const router = useRouter()
+
   const signOut = React.useCallback(() => {
     clearSession()
-  }, [clearSession])
+    router.push("/")
+  }, [clearSession, router])
 
   const value = React.useMemo<WorkspaceContextValue>(
     () => ({

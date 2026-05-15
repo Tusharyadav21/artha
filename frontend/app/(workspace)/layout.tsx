@@ -12,7 +12,7 @@ export default async function WorkspaceLayout({
   const token = cookieStore.get(TOKEN_KEY)
 
   if (!token) {
-    redirect("/auth")
+    redirect("/")
   }
 
   return <WorkspaceShell>{children}</WorkspaceShell>

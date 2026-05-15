@@ -8,7 +8,8 @@ ENV UV_LINK_MODE=copy \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH" \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 
 # Install system dependencies
@@ -41,14 +42,14 @@ COPY pyproject.toml uv.lock* ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-install-project --index-strategy unsafe-best-match
 
-# Cache playwright browsers separately to avoid re-downloads
-# This layer is only rebuilt if pyproject.toml/uv.lock changes
-RUN --mount=type=cache,target=/root/.cache/ms-playwright \
-    uv run playwright install chromium
+# Install playwright browsers into a persistent location
+RUN uv run playwright install chromium
 
 # Development stage
 FROM deps AS dev
 COPY . .
+# Install video-renderer dependencies for dev
+RUN cd video-renderer && npm install
 EXPOSE 8000
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
@@ -64,8 +65,8 @@ COPY --from=deps /app/.venv /app/.venv
 COPY alembic.ini ./
 COPY alembic ./alembic
 COPY src ./src
-# Copy playwright browsers from builder
-COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
+# Copy playwright browsers from deps
+COPY --from=deps /ms-playwright /ms-playwright
 
 # Pre-install video-renderer dependencies
 COPY video-renderer/package*.json ./video-renderer/
@@ -73,7 +74,7 @@ RUN cd video-renderer && npm install
 COPY video-renderer ./video-renderer
 
 # Create a non-root user for security
-RUN useradd -m appuser && chown -R appuser:appuser /app
+RUN useradd -m appuser && chown -R appuser:appuser /app /ms-playwright
 USER appuser
 
 EXPOSE 8000

@@ -4,6 +4,8 @@ from fastapi.responses import FileResponse
 import traceback
 import logging
 from src.auth.dependencies import get_current_user
+
+logger = logging.getLogger(__name__)
 from src.domain.models import User
 from src.schemas.video import (
     ScriptRequest, ScriptResponse,
@@ -13,7 +15,7 @@ from src.schemas.video import (
     HistoryResponse, VideoHistoryItem
 )
 from src.services.video_gen import VideoGenService
-from src.domain.models import User, GeneratedVideo
+from src.domain.models import GeneratedVideo
 from src.core.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -27,19 +29,19 @@ def get_video_service():
 
 @router.post("/draft/script", response_model=ScriptResponse)
 async def generate_script(
-    req: ScriptRequest, 
+    req: ScriptRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     service: VideoGenService = Depends(get_video_service)
 ):
     try:
         return await service.generate_script(req.topic)
     except Exception as e:
-        logging.error(f"Error in generate_script: {str(e)}\n{traceback.format_exc()}")
+        logger.error(f"Error in generate_script: {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/draft/voice", response_model=VoiceResponse)
 async def generate_voice(
-    req: VoiceRequest, 
+    req: VoiceRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     service: VideoGenService = Depends(get_video_service)
 ):
@@ -47,6 +49,7 @@ async def generate_voice(
         path = await service.synthesize_voice(req.text, req.voice, req.speed)
         return VoiceResponse(audio_path=path)
     except Exception as e:
+        logger.error(f"Error in generate_voice: {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/draft/visuals", response_model=VisualsResponse)

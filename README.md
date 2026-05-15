@@ -62,14 +62,19 @@ graph TD
 
 ## 🚀 Quick Start (Docker)
 
-The easiest way to get up and running is using the premium interactive launcher script [run.sh](file:///Users/tusharyadav/Dev/agentic_rag/run.sh). It automatically performs essential pre-checks (Docker daemon status, `.env` file presence, Ollama connectivity, and model availability), starts services, and runs database migrations.
+The easiest way to get up and running is using the interactive launcher script [run.sh](./run.sh). It automatically performs essential pre-checks (Docker daemon status, `.env` file presence, Ollama connectivity, and model availability), starts services, and runs database migrations.
 
 ### Interactive Startup
 ```bash
 ./run.sh
 ```
 
-Choose **Option 1** (or **Option 2** for rebuild) to start the stack, wait for services to be healthy, and automatically run database migrations.
+Menu options:
+- **Option 1**: Start Stack (Build + Migrations + Logs)
+- **Option 2**: Start Stack with Dev Tools (RedisInsight for Redis GUI at `http://localhost:8001`)
+- **Option 3-9**: Stop, Restart, Status, Logs, Migrations, Clean, Exit
+
+Choose **Option 1** to start the stack, wait for services to be healthy, and automatically run database migrations.
 
 ---
 
