@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# Signal trap for graceful exits
-trap "echo -e '\n\n\033[0;31m🛑 Execution interrupted by user.\033[0m'; exit 1" INT
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -24,23 +21,51 @@ log_step() { echo -e "${CYAN}🚀 $1${NC}"; }
 # Docker Compose Configuration
 COMPOSE_BASE="compose.yaml"
 COMPOSE_DEV="compose.dev.yaml"
-COMPOSE_PROD="compose.prod.yaml"
-
-# Default to dev
 COMPOSE_FILES="-f $COMPOSE_BASE -f $COMPOSE_DEV"
 PROFILES=""
 
-# Check for production flag in arguments
+# Check for custom flags
 for arg in "$@"; do
-    if [ "$arg" == "--prod" ]; then
-        COMPOSE_FILES="-f $COMPOSE_BASE -f $COMPOSE_PROD"
-        log_warning "Running in PRODUCTION mode!"
-    fi
     if [ "$arg" == "--dev-tools" ]; then
         PROFILES="--profile dev"
         log_info "Including developer tools (RedisInsight)..."
     fi
 done
+
+# Signal trap for graceful exits
+cleanup() {
+    echo -e "\n\n${YELLOW}🛑 Shutting down host processes and containers...${NC}"
+    
+    # Terminate native background processes
+    if [ ! -z "$BACKEND_PID" ]; then
+        log_info "Stopping Backend API (PID: $BACKEND_PID)..."
+        kill $BACKEND_PID 2>/dev/null
+    fi
+    if [ ! -z "$WORKER_PID" ]; then
+        log_info "Stopping Arq Worker (PID: $WORKER_PID)..."
+        kill $WORKER_PID 2>/dev/null
+    fi
+    if [ ! -z "$FRONTEND_PID" ]; then
+        log_info "Stopping Frontend Client (PID: $FRONTEND_PID)..."
+        kill $FRONTEND_PID 2>/dev/null
+    fi
+    if [ ! -z "$DOCKER_LOGS_PID" ]; then
+        kill $DOCKER_LOGS_PID 2>/dev/null
+    fi
+
+    # Kill by pattern just in case
+    pkill -f "uvicorn src.main:app" 2>/dev/null
+    pkill -f "arq src.workers.arq_worker.WorkerSettings" 2>/dev/null
+    pkill -f "next dev" 2>/dev/null
+    
+    # Stop docker containers
+    log_info "Stopping containerized services..."
+    docker compose $COMPOSE_FILES $PROFILES down 2>/dev/null
+    
+    log_success "All processes stopped and containers shut down successfully."
+    exit 0
+}
+trap cleanup INT TERM
 
 show_banner() {
     clear
@@ -53,6 +78,24 @@ show_banner() {
     echo -e "${PURPLE}                  Autonomous Retrieval-Augmented Generation Stack${NC}"
     echo -e "${WHITE}─────────────────────────────────────────────────────────────────────────────────${NC}"
     echo ""
+}
+
+load_env() {
+    if [ ! -f .env ]; then
+        log_warning ".env file not found. Creating from .env.example..."
+        cp .env.example .env
+    fi
+    # Sync environment configuration to subdirectories for native host loading
+    cp .env backend/.env 2>/dev/null
+    cp .env frontend/.env 2>/dev/null
+}
+
+check_tool() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        log_error "Required tool '$1' is not installed on your host machine."
+        log_info "Please install '$1' to run this service locally."
+        exit 1
+    fi
 }
 
 check_docker() {
@@ -85,28 +128,14 @@ check_docker() {
     fi
 }
 
-check_env() {
-    log_step "Checking environment configuration..."
-    if [ ! -f .env ]; then
-        log_warning ".env file not found. Creating from .env.example..."
-        cp .env.example .env
-        log_success ".env file created. You may want to customize secrets in it."
-    else
-        log_success ".env file is present."
-    fi
-}
-
 check_ollama() {
     log_step "Checking Ollama integration..."
     if curl -s -f http://localhost:11434 >/dev/null 2>&1; then
         log_success "Ollama host is reachable at http://localhost:11434"
         
-        # Load models from .env or default
-        local OLLAMA_REASONER=$(grep -E '^OLLAMA_MODEL_REASONER=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-        local OLLAMA_EMBED=$(grep -E '^OLLAMA_MODEL_EMBED=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-        
-        OLLAMA_REASONER=${OLLAMA_REASONER:-"qwen2.5:3b"}
-        OLLAMA_EMBED=${OLLAMA_EMBED:-"nomic-embed-text"}
+        # Load models from env or default
+        local OLLAMA_REASONER=${OLLAMA_MODEL_REASONER:-"qwen2.5:3b"}
+        local OLLAMA_EMBED=${OLLAMA_MODEL_EMBED:-"nomic-embed-text"}
         
         log_info "Checking pulled models..."
         local pulled_models=$(curl -s http://localhost:11434/api/tags)
@@ -130,18 +159,19 @@ check_ollama() {
 
 start_stack() {
     check_docker
-    check_env
+    load_env
+    check_tool uv
+    check_tool bun
     check_ollama
     
-    log_step "Starting the Docker Compose services with --build..."
-    docker compose $COMPOSE_FILES $PROFILES up -d --build
+    log_step "Starting infrastructure containers (PostgreSQL, Redis, Langfuse)..."
+    docker compose $COMPOSE_FILES $PROFILES up -d
     
     if [ $? -ne 0 ]; then
         log_error "Failed to start services via docker compose."
         exit 1
     fi
-    
-    log_success "Docker containers are starting up in the background."
+    log_success "Infrastructure containers started."
     
     # Wait for postgres to be healthy
     log_step "Waiting for database (PostgreSQL) to be healthy..."
@@ -153,13 +183,13 @@ start_stack() {
             log_success "PostgreSQL is healthy!"
             break
         elif [ "$status" == "unhealthy" ]; then
-            log_error "PostgreSQL reported unhealthy status. Checking logs..."
+            log_error "PostgreSQL reported unhealthy status. Checking container logs..."
             docker compose $COMPOSE_FILES logs postgres
             exit 1
         fi
         
         if [ $count -ge $timeout ]; then
-            log_warning "Timeout waiting for PostgreSQL to be healthy. Attempting database migrations anyway..."
+            log_warning "Timeout waiting for PostgreSQL to be healthy. Trying local migrations anyway..."
             break
         fi
         
@@ -169,37 +199,77 @@ start_stack() {
     done
     echo ""
     
-    # Run database migrations
-    log_step "Running database migrations via Alembic..."
-    docker compose $COMPOSE_FILES exec backend alembic upgrade head
+    # Run database migrations locally from the host
+    log_step "Running database migrations locally via Alembic..."
+    cd backend
+    uv run alembic upgrade head
     if [ $? -eq 0 ]; then
-        log_success "Database migrations executed successfully!"
+        log_success "Alembic migrations completed successfully!"
     else
-        log_warning "Alembic migrations might have failed or backend service is not fully ready. Retrying in 5 seconds..."
-        sleep 5
-        docker compose $COMPOSE_FILES exec backend alembic upgrade head
-        if [ $? -eq 0 ]; then
-            log_success "Database migrations executed successfully on second attempt!"
-        else
-            log_error "Alembic migrations failed. You can run them manually later using './run.sh migrate'."
-        fi
+        log_error "Local Alembic migrations failed. Check your environment settings."
+        exit 1
     fi
-    
-    echo -e "\n${GREEN}${BOLD}🎉 AGENTIC RAG SERVICES ARE SUCCESSFULLY RUNNING!${NC}\n"
+    cd ..
+
+    echo -e "\n${GREEN}${BOLD}🎉 LAUNCHING LOCAL DEVELOPMENT SERVICES...${NC}"
     echo -e "🔗 ${WHITE}Frontend Dashboard:${NC}   ${CYAN}http://localhost:3000${NC}"
     echo -e "🔗 ${WHITE}Backend API Docs:${NC}     ${CYAN}http://localhost:8000/docs${NC}"
     echo -e "🔗 ${WHITE}Langfuse Trace UI:${NC}   ${CYAN}http://localhost:3001${NC}"
-    echo ""
-    
-    log_step "Streaming logs (interactive mode)..."
-    docker compose $COMPOSE_FILES logs -f
+    echo -e "${YELLOW}Streaming logs. Press Ctrl+C to stop all services and containers cleanly.${NC}\n"
+
+    # Start Backend API Server
+    cd backend
+    uv run uvicorn src.main:app --host 127.0.0.1 --port 8000 --reload 2>&1 | sed -u "s/^/${YELLOW}[backend] ${NC}/" &
+    BACKEND_PID=$!
+    cd ..
+
+    # Start Arq Background Worker
+    cd backend
+    uv run arq src.workers.arq_worker.WorkerSettings 2>&1 | sed -u "s/^/${PURPLE}[worker]  ${NC}/" &
+    WORKER_PID=$!
+    cd ..
+
+    # Start Frontend Next.js Client
+    cd frontend
+    bun run dev 2>&1 | sed -u "s/^/${CYAN}[frontend] ${NC}/" &
+    FRONTEND_PID=$!
+    cd ..
+
+    # Stream containerized infrastructure logs
+    docker compose $COMPOSE_FILES logs -f 2>&1 | sed -u "s/^/${BLUE}[docker]   ${NC}/" &
+    DOCKER_LOGS_PID=$!
+
+    # Active monitoring loop: shut down if any background host process crashes
+    while true; do
+        if ! kill -0 $BACKEND_PID 2>/dev/null; then
+            log_error "Backend service exited unexpectedly!"
+            break
+        fi
+        if ! kill -0 $WORKER_PID 2>/dev/null; then
+            log_error "Worker service exited unexpectedly!"
+            break
+        fi
+        if ! kill -0 $FRONTEND_PID 2>/dev/null; then
+            log_error "Frontend service exited unexpectedly!"
+            break
+        fi
+        sleep 2
+    done
+
+    cleanup
 }
 
 stop_stack() {
     check_docker
-    log_step "Stopping all Agentic RAG services..."
-    docker compose $COMPOSE_FILES down
-    log_success "All services stopped."
+    load_env
+    log_step "Stopping all host processes and containers..."
+    
+    pkill -f "uvicorn src.main:app" 2>/dev/null
+    pkill -f "arq src.workers.arq_worker.WorkerSettings" 2>/dev/null
+    pkill -f "next dev" 2>/dev/null
+    
+    docker compose $COMPOSE_FILES $PROFILES down
+    log_success "All processes stopped and containers shut down successfully."
 }
 
 restart_stack() {
@@ -209,25 +279,39 @@ restart_stack() {
 
 view_status() {
     check_docker
-    log_step "Current service status:"
+    log_step "Current service status (Docker infra):"
     docker compose $COMPOSE_FILES ps
+    echo ""
+    log_step "Current host service statuses:"
+    if pgrep -f "uvicorn src.main:app" >/dev/null; then
+        echo -e "  Backend API: ${GREEN}RUNNING${NC}"
+    else
+        echo -e "  Backend API: ${RED}STOPPED${NC}"
+    fi
+    if pgrep -f "arq src.workers.arq_worker.WorkerSettings" >/dev/null; then
+        echo -e "  Arq Worker:  ${GREEN}RUNNING${NC}"
+    else
+        echo -e "  Arq Worker:  ${RED}STOPPED${NC}"
+    fi
+    if pgrep -f "next dev" >/dev/null; then
+        echo -e "  Frontend:    ${GREEN}RUNNING${NC}"
+    else
+        echo -e "  Frontend:    ${RED}STOPPED${NC}"
+    fi
 }
 
 tail_logs() {
     check_docker
-    if [ -z "$1" ]; then
-        log_step "Streaming logs for all services (Ctrl+C to stop)..."
-        docker compose $COMPOSE_FILES logs -f
-    else
-        log_step "Streaming logs for '$1' (Ctrl+C to stop)..."
-        docker compose $COMPOSE_FILES logs -f "$1"
-    fi
+    log_step "Streaming logs for containerized infrastructure..."
+    docker compose $COMPOSE_FILES logs -f "$@"
 }
 
 run_migrations() {
-    check_docker
-    log_step "Running Alembic database migrations..."
-    docker compose $COMPOSE_FILES exec backend alembic upgrade head
+    load_env
+    check_tool uv
+    log_step "Running database migrations locally via Alembic..."
+    cd backend
+    uv run alembic upgrade head
 }
 
 clean_system() {
@@ -236,6 +320,9 @@ clean_system() {
     read -p "Are you absolutely sure you want to proceed? (y/N) " confirm
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         log_step "Stopping services and deleting volumes..."
+        pkill -f "uvicorn src.main:app" 2>/dev/null
+        pkill -f "arq src.workers.arq_worker.WorkerSettings" 2>/dev/null
+        pkill -f "next dev" 2>/dev/null
         docker compose $COMPOSE_FILES down -v
         log_success "Stack stopped and volumes deleted successfully."
     else
@@ -247,14 +334,14 @@ interactive_menu() {
     while true; do
         show_banner
         echo -e "${BOLD}${WHITE}Select an action to perform:${NC}"
-        echo -e "  ${CYAN}1)${NC} 🚀 Start Stack (Build + Migrations + Logs)"
+        echo -e "  ${CYAN}1)${NC} 🚀 Start Hybrid Stack (Docker Infra + Local App + Unified Logs)"
         echo -e "  ${CYAN}2)${NC} 🛠️  Start Stack with Dev Tools (RedisInsight)"
-        echo -e "  ${CYAN}3)${NC} 🛑 Stop Stack"
+        echo -e "  ${CYAN}3)${NC} 🛑 Stop Stack & Processes"
         echo -e "  ${CYAN}4)${NC} ♻️  Restart Stack"
-        echo -e "  ${CYAN}5)${NC} 📊 Check Services Status (ps)"
-        echo -e "  ${CYAN}6)${NC} 📋 View Services Logs"
-        echo -e "  ${CYAN}7)${NC} ⚙️  Run Database Migrations"
-        echo -e "  ${CYAN}8)${NC} 🧹 Deep Clean Stack (Remove Volumes)"
+        echo -e "  ${CYAN}5)${NC} 📊 Check Services Status"
+        echo -e "  ${CYAN}6)${NC} 📋 View Infrastructure Logs"
+        echo -e "  ${CYAN}7)${NC} ⚙️  Run Database Migrations locally"
+        echo -e "  ${CYAN}8)${NC} 🧹 Deep Clean Docker Volumes"
         echo -e "  ${CYAN}9)${NC} 🚪 Exit"
         echo ""
         read -p "Enter your choice (1-9): " choice
@@ -282,25 +369,7 @@ interactive_menu() {
                 view_status
                 ;;
             6)
-                echo "Select logs to view:"
-                echo "1) All services"
-                echo "2) Backend"
-                echo "3) Frontend"
-                echo "4) Worker"
-                echo "5) Postgres"
-                echo "6) Redis"
-                echo "7) Langfuse"
-                read -p "Choose service (1-7): " log_choice
-                case $log_choice in
-                    1) tail_logs ;;
-                    2) tail_logs backend ;;
-                    3) tail_logs frontend ;;
-                    4) tail_logs worker ;;
-                    5) tail_logs postgres ;;
-                    6) tail_logs redis ;;
-                    7) tail_logs langfuse ;;
-                    *) log_error "Invalid option" ;;
-                esac
+                tail_logs
                 ;;
             7)
                 run_migrations
@@ -326,16 +395,11 @@ interactive_menu() {
 # Handle direct command-line arguments
 if [ $# -gt 0 ]; then
     show_banner
-    # Filter out our custom flags before passing to command logic
     COMMAND=$1
     shift
     case "$COMMAND" in
         up|start)
-            if [ "$2" == "--build" ] || [ "$2" == "-b" ]; then
-                start_stack --build
-            else
-                start_stack
-            fi
+            start_stack
             ;;
         down|stop)
             stop_stack
@@ -347,7 +411,7 @@ if [ $# -gt 0 ]; then
             view_status
             ;;
         logs)
-            tail_logs "$2"
+            tail_logs "$@"
             ;;
         migrate)
             run_migrations
@@ -359,24 +423,22 @@ if [ $# -gt 0 ]; then
             echo -e "Usage: ./run.sh [command]"
             echo ""
             echo "Commands:"
-            echo "  start, up       Start all services and run database migrations"
-            echo "  start --build   Rebuild container images and start services"
-            echo "  stop, down      Stop all running services"
+            echo "  start, up       Start Docker infra, run local migrations, start host apps with unified logs"
+            echo "  stop, down      Stop all running services and host processes"
             echo "  restart         Stop and then start services"
-            echo "  status, ps      Show current status of all containers"
-            echo "  logs [service]  Tail logs of all or a specific service (e.g., backend, frontend)"
-            echo "  migrate         Manually run database migrations"
-            echo "  clean           Stop containers and delete volumes (data reset)"
+            echo "  status, ps      Show current status of host processes and containers"
+            echo "  logs [service]  Tail logs of specific Docker container services"
+            echo "  migrate         Manually run database migrations locally"
+            echo "  clean           Stop stack and delete volumes (data reset)"
             echo "  help            Show this help menu"
             echo ""
             echo "Options:"
-            echo "  --prod          Run using production overrides (compose.prod.yaml)"
-            echo "  --dev-tools     Include dev tools profile (pgAdmin, Redis Commander)"
+            echo "  --dev-tools     Include dev tools profile (RedisInsight)"
             echo ""
             echo "If run without commands, opens the interactive menu."
             ;;
         *)
-            log_error "Unknown command: $1"
+            log_error "Unknown command: $COMMAND"
             echo "Run './run.sh help' for usage instructions."
             exit 1
             ;;

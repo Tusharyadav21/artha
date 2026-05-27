@@ -23,6 +23,7 @@ dependencies = [
     "psycopg[binary]>=3.3",
     "structlog>=24.4",
     "sentence-transformers>=3.3",
+    "torch>=2.0",
     "alembic>=1.18.4",
     "python-multipart>=0.0.27",
     "pypdf>=6.10.2",

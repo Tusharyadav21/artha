@@ -25,6 +25,21 @@ logger = logging.getLogger(__name__)
 
 
 def _event(event: str, data: Any) -> str:
+    """
+    Purpose:
+        Formats data into a Server-Sent Event (SSE) string.
+
+    Args:
+        event (str):
+            The SSE event type (e.g., "token", "final").
+
+        data (Any):
+            The payload to be JSON-encoded.
+
+    Returns:
+        str:
+            A formatted SSE event string.
+    """
     return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
 
 
@@ -36,7 +51,62 @@ async def chat(
     payload: ChatRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
-):
+) -> StreamingResponse:
+    """
+    Purpose:
+        Handles RAG-powered chat queries using a streaming SSE response.
+
+    Responsibilities:
+        - Verify project ownership
+        - Manage conversation lifecycle (create or retrieve)
+        - Persist user message
+        - Orchestrate RAG context retrieval and LLM generation
+        - Track spans and traces via Langfuse
+        - Stream tokens and sources to the client
+
+    Args:
+        request (Request):
+            FastAPI request object for rate limiting.
+
+        project_id (UUID):
+            The ID of the project containing the conversation.
+
+        payload (ChatRequest):
+            Request body containing message, model, and RAG parameters.
+
+        current_user (Annotated[User, Depends(get_current_user)]):
+            The authenticated user.
+
+        db (Annotated[AsyncSession, Depends(get_db)]):
+            Database session dependency.
+
+    Returns:
+        StreamingResponse:
+            SSE stream of conversation, sources, tokens, and the final response.
+
+    Raises:
+        HTTPException:
+            404 Not Found if the project or conversation is not found.
+
+    Side Effects:
+        - Adds messages to the database.
+        - Creates a new conversation if none is provided.
+        - Generates spans and traces in Langfuse.
+
+    Flow:
+        1. Validate project access.
+        2. Resolve conversation (existing ID or new).
+        3. Persist user query message.
+        4. Initialize Langfuse trace.
+        5. Stream response via internal `stream()` generator:
+            a. Yield conversation metadata.
+            b. Retrieve RAG context and yield sources.
+            c. Stream tokens from Ollama and yield each token.
+            d. Persist the complete assistant response to database.
+            e. Yield final message metadata.
+            f. Close Langfuse spans and flush trace.
+        6. Handle mid-stream errors by persisting partial responses and marking traces.
+    """
     target_model = payload.model
     ollama = OllamaClient()
     lf = get_langfuse()
@@ -248,7 +318,51 @@ async def post_message_feedback(
     payload: FeedbackRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
-):
+) -> dict[str, str]:
+    """
+    Purpose:
+        Collects user feedback (rating and comment) for a specific chat message.
+
+    Responsibilities:
+        - Verify project ownership
+        - Validate message existence within the project
+        - Update feedback in the database
+        - Log score to Langfuse
+
+    Args:
+        project_id (UUID):
+            The ID of the parent project.
+
+        message_id (UUID):
+            The ID of the message being rated.
+
+        payload (FeedbackRequest):
+            Contains rating ("up"/"down") and an optional comment.
+
+        current_user (Annotated[User, Depends(get_current_user)]):
+            The authenticated user.
+
+        db (Annotated[AsyncSession, Depends(get_db)]):
+            Database session dependency.
+
+    Returns:
+        dict:
+            A success status message.
+
+    Raises:
+        HTTPException:
+            404 Not Found if project or message is not found.
+
+    Side Effects:
+        - Updates the message record in the database.
+        - Sends a score to Langfuse.
+
+    Flow:
+        1. Ensure project exists and user has access.
+        2. Retrieve message scoped by project.
+        3. Apply feedback via MessageRepository.
+        4. Push the rating (1.0/0.0) to Langfuse.
+    """
     project = await ProjectRepository(db).get_for_user(project_id, current_user.id)
     if project is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")

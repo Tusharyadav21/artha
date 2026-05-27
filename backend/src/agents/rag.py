@@ -4,18 +4,25 @@ from uuid import UUID
 from langgraph.graph import END, StateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.config import get_settings
 from src.domain.models import Project
 from src.repositories.conversations import ConversationRepository
 from src.repositories.documents import DocumentRepository
 from src.services.ollama import OllamaClient
 from src.services.reranker import Reranker
 
+# Chunk_limit threshold at or above which HyDE expansion is attempted
+_HYDE_COMPLEXITY_THRESHOLD = 6
+
 # Summarize old history once conversation exceeds this many messages
 _HISTORY_SUMMARIZE_AT = 10
 # How many recent messages to always keep verbatim
 _HISTORY_KEEP_RECENT = 6
-# CrossEncoder logit below which retrieved docs are considered not relevant
-_RELEVANCE_THRESHOLD = 0.0
+# Reranker emits sigmoid-normalised scores in (0, 1). Below this, the best
+# chunk is treated as essentially irrelevant and the prompt falls back to a
+# "no sufficient context" instruction. Tuned conservatively so weak matches
+# still reach the LLM as supporting context.
+_RELEVANCE_THRESHOLD = 0.05
 
 _COMPLEX_KEYWORDS = frozenset({
     "compare", "contrast", "analyze", "analyse", "summarize", "summarise",
@@ -46,6 +53,7 @@ class RagState(TypedDict):
     model_name: str | None
     num_ctx: int | None
     num_predict: int | None
+    hyde_text: str | None
 
 
 DEFAULT_SYSTEM_PROMPT = (
@@ -57,6 +65,21 @@ DEFAULT_SYSTEM_PROMPT = (
 
 
 def _format_history(history: list[dict[str, str]], capitalize_roles: bool = False) -> str:
+    """
+    Purpose:
+        Formats a list of message dictionaries into a readable string for LLM context.
+
+    Args:
+        history (list[dict[str, str]]):
+            List of messages, each containing 'role' and 'content'.
+
+        capitalize_roles (bool, optional):
+            Whether to capitalize the role name (e.g., 'User' vs 'user'). Defaults to False.
+
+    Returns:
+        str:
+            A newline-separated string of role: content pairs.
+    """
     if capitalize_roles:
         return "\n".join(
             f"{message['role'].capitalize()}: {message['content']}" for message in history
@@ -65,7 +88,24 @@ def _format_history(history: list[dict[str, str]], capitalize_roles: bool = Fals
 
 
 def _classify_query_complexity(query: str) -> int:
-    """Return chunk limit (3 / 5 / 6) based on how many docs the query likely needs."""
+    """
+    Purpose:
+        Determines the appropriate number of retrieved chunks based on query complexity.
+
+    Args:
+        query (str):
+            The standalone search query.
+
+    Returns:
+        int:
+            A chunk limit (3, 5, or 6) based on query length and keywords.
+
+    Flow:
+        1. Split query into lowercase words.
+        2. Return 3 for short queries without complex keywords.
+        3. Return 6 for very long queries or those containing complex keywords.
+        4. Return 5 as a default for medium complexity.
+    """
     words = query.lower().split()
     if len(words) <= 8 and not _COMPLEX_KEYWORDS.intersection(words):
         return 3
@@ -75,6 +115,27 @@ def _classify_query_complexity(query: str) -> int:
 
 
 async def _summarize_history(messages: list[dict]) -> str:
+    """
+    Purpose:
+        Compresses long conversation history into a concise summary using the LLM.
+
+    Args:
+        messages (list[dict]):
+            The sequence of messages to summarize.
+
+    Returns:
+        str:
+            A 2-3 sentence summary of the conversation.
+
+    Raises:
+        None (catches exceptions and falls back to raw text truncation).
+
+    Flow:
+        1. Format message history into a human-readable string.
+        2. Construct a summarization prompt.
+        3. Call OllamaClient to generate the summary.
+        4. Return the stripped result or a truncated fallback on failure.
+    """
     from logging import getLogger
     logger = getLogger(__name__)
 
@@ -92,6 +153,30 @@ async def _summarize_history(messages: list[dict]) -> str:
 
 
 def build_rag_graph(db: AsyncSession):
+    """
+    Purpose:
+        Constructs the LangGraph state machine for the RAG pipeline.
+
+    Responsibilities:
+        - Define the RagState schema
+        - Implement nodes for query rewriting, routing, HyDE, retrieval, reranking, and prompt composition
+        - Define the execution flow (edges) between nodes
+
+    Args:
+        db (AsyncSession):
+            Database session for repository access within nodes.
+
+    Returns:
+        CompiledGraph:
+            The compiled LangGraph state machine.
+
+    Flow:
+        1. Define async node functions (rewrite_query, route_query, etc.).
+        2. Initialize StateGraph with RagState.
+        3. Add nodes and set the entry point.
+        4. Define sequential edges from rewrite -> route -> hyde -> retrieve -> rerank -> quality_gate -> compress -> compose.
+        5. Compile and return the graph.
+    """
     async def rewrite_query(state: RagState) -> RagState:
         if not state.get("history"):
             return {**state, "search_query": state["question"]}
@@ -122,12 +207,48 @@ def build_rag_graph(db: AsyncSession):
         chunk_limit = _classify_query_complexity(state["search_query"])
         return {**state, "chunk_limit": chunk_limit}
 
+    async def hyde_expand(state: RagState) -> RagState:
+        """Generate a hypothetical answer for complex queries to enrich the
+        embedding-side retrieval signal (HyDE). Skipped for simple lookups and
+        when disabled via settings."""
+        from logging import getLogger
+        logger = getLogger(__name__)
+
+        if not get_settings().hyde_enabled:
+            return {**state, "hyde_text": None}
+        if state.get("chunk_limit", 0) < _HYDE_COMPLEXITY_THRESHOLD:
+            return {**state, "hyde_text": None}
+
+        prompt = (
+            "Write a concise, plausible 2-3 sentence answer to the question below. "
+            "It will be used only as a retrieval cue, so prioritise topical keywords "
+            "and entity names over hedging. Do not include preambles.\n\n"
+            f"Question: {state['search_query']}\n\nHypothetical answer:"
+        )
+        try:
+            answer = await OllamaClient().generate(
+                prompt,
+                model_name=state.get("model_name"),
+                num_ctx=state.get("num_ctx"),
+                num_predict=256,
+            )
+            hyde_text = answer.strip() or None
+        except Exception as exc:
+            logger.warning(f"HyDE expansion failed, falling back to query-only: {exc}")
+            hyde_text = None
+        return {**state, "hyde_text": hyde_text}
+
     async def retrieve(state: RagState) -> RagState:
         from logging import getLogger
         logger = getLogger(__name__)
 
         chunk_limit = state.get("chunk_limit", 5)
-        query_embedding = await OllamaClient().embed(state["search_query"])
+        # HyDE: combine the query with a hypothetical answer for the embedding
+        # signal only — keyword/trigram search keeps the original query.
+        embed_text = state["search_query"]
+        if hyde_text := state.get("hyde_text"):
+            embed_text = f"{state['search_query']}\n\n{hyde_text}"
+        query_embedding = await OllamaClient().embed(embed_text)
         rows = await DocumentRepository(db).search_chunks(
             state["project_id"],
             query_embedding,
@@ -223,6 +344,7 @@ def build_rag_graph(db: AsyncSession):
     graph = StateGraph(RagState)
     graph.add_node("rewrite_query", rewrite_query)
     graph.add_node("route_query", route_query)
+    graph.add_node("hyde_expand", hyde_expand)
     graph.add_node("retrieve", retrieve)
     graph.add_node("rerank", rerank)
     graph.add_node("quality_gate", quality_gate)
@@ -230,13 +352,17 @@ def build_rag_graph(db: AsyncSession):
     graph.add_node("compose_prompt", compose_prompt)
     graph.set_entry_point("rewrite_query")
     graph.add_edge("rewrite_query", "route_query")
-    graph.add_edge("route_query", "retrieve")
+    graph.add_edge("route_query", "hyde_expand")
+    graph.add_edge("hyde_expand", "retrieve")
     graph.add_edge("retrieve", "rerank")
     graph.add_edge("rerank", "quality_gate")
     graph.add_edge("quality_gate", "compress")
     graph.add_edge("compress", "compose_prompt")
     graph.add_edge("compose_prompt", END)
     return graph.compile()
+
+
+
 
 
 async def prepare_rag_context(
@@ -249,6 +375,52 @@ async def prepare_rag_context(
     num_ctx: int | None = None,
     num_predict: int | None = None,
 ) -> RagState:
+    """
+    Purpose:
+        Orchestrates the RAG pipeline to generate a final prompt for the LLM.
+
+    Responsibilities:
+        - Resolve project-specific system prompt
+        - Manage and summarize conversation history
+        - Execute the LangGraph RAG pipeline
+
+    Args:
+        db (AsyncSession):
+            Database session dependency.
+
+        project_id (UUID):
+            The ID of the target project.
+
+        conversation_id (UUID):
+            The ID of the conversation for history retrieval.
+
+        question (str):
+            The user's query.
+
+        document_ids (list[UUID] | None, optional):
+            Optional filter for specific documents to search.
+
+        model_name (str | None, optional):
+            LLM model to use for query rewriting/summarization.
+
+        num_ctx (int | None, optional):
+            Context window size for the model.
+
+        num_predict (int | None, optional):
+            Max tokens to predict.
+
+    Returns:
+        RagState:
+            The final state containing the composed prompt and retrieved sources.
+
+    Flow:
+        1. Retrieve the project's system prompt.
+        2. Fetch conversation messages.
+        3. Summarize history if it exceeds _HISTORY_SUMMARIZE_AT.
+        4. Build the RAG graph.
+        5. Invoke the graph with the current state to compute the prompt.
+        6. Return the resulting RagState.
+    """
     project = await db.get(Project, project_id)
     system_prompt = project.system_prompt if project else None
 
@@ -283,6 +455,7 @@ async def prepare_rag_context(
             "model_name": model_name,
             "num_ctx": num_ctx,
             "num_predict": num_predict,
+            "hyde_text": None,
         },
         config={"configurable": {"thread_id": str(conversation_id)}},
     )

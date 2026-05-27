@@ -16,7 +16,27 @@ logger = logging.getLogger(__name__)
 
 @lru_cache(maxsize=1)
 def get_langfuse():
-    """Return a configured Langfuse instance, or None if not set up."""
+    """
+    Purpose:
+        Singleton provider for the Langfuse tracing client.
+
+    Responsibilities:
+        - Validate presence of API keys from settings.
+        - Instantiate and configure the Langfuse client.
+        - Handle initialization failures gracefully.
+
+    Inputs:
+        None.
+
+    Outputs:
+        Langfuse | None: Configured client if keys exist and initialization succeeds, otherwise None.
+
+    Execution flow:
+        1. Fetch settings.
+        2. Check for public and secret keys.
+        3. Attempt to instantiate Langfuse with host and keys.
+        4. Return client or None on failure.
+    """
     settings = get_settings()
 
     if not settings.langfuse_public_key or not settings.langfuse_secret_key:

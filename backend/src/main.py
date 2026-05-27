@@ -15,6 +15,24 @@ from src.routers import auth, chat, conversations, documents, health, projects, 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Purpose:
+        Manages application startup and shutdown events.
+
+    Responsibilities:
+        - Initialize global settings
+        - Configure system logging
+
+    Args:
+        app (FastAPI):
+            The FastAPI application instance.
+
+    Returns:
+        None
+
+    Side Effects:
+        - Sets up logging for the process
+    """
     settings = get_settings()
     configure_logging(settings.log_level)
     yield

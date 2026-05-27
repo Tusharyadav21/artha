@@ -15,6 +15,7 @@ services:
       retries: 5
     networks:
       - internal
+      - public
 
   redis:
     image: redis:7-alpine
@@ -27,6 +28,7 @@ services:
       retries: 5
     networks:
       - internal
+      - public
 
   langfuse-db:
     image: postgres:18-alpine
@@ -56,76 +58,12 @@ services:
       SALT: ${LANGFUSE_SALT:-change-me}
       TELEMETRY_ENABLED: "false"
       HOSTNAME: "0.0.0.0"
+    ports:
+      - "3001:3000"
     networks:
       - internal
       - public
 
-  backend:
-    build:
-      context: ./backend
-      target: ${BUILD_TARGET:-dev}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-ragapp}:${POSTGRES_PASSWORD:-ragapp}@postgres:5432/${POSTGRES_DB:-ragapp}
-      REDIS_URL: redis://redis:6379/0
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      OLLAMA_MODEL_REASONER: ${OLLAMA_MODEL_REASONER:-qwen2.5:7b}
-      OLLAMA_MODEL_PLANNER: ${OLLAMA_MODEL_PLANNER:-qwen2.5:7b}
-      OLLAMA_MODEL_EMBED: ${OLLAMA_MODEL_EMBED:-nomic-embed-text}
-      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-4096}
-      OLLAMA_NUM_PREDICT: ${OLLAMA_NUM_PREDICT:-2048}
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-at-least-32-chars}
-      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      LANGFUSE_HOST: http://langfuse:3000
-      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
-      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
-    networks:
-      - internal
-      - public
-
-  worker:
-    build:
-      context: ./backend
-      target: ${BUILD_TARGET:-dev}
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    command: ["arq", "src.workers.arq_worker.WorkerSettings"]
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-ragapp}:${POSTGRES_PASSWORD:-ragapp}@postgres:5432/${POSTGRES_DB:-ragapp}
-      REDIS_URL: redis://redis:6379/0
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      OLLAMA_MODEL_REASONER: ${OLLAMA_MODEL_REASONER:-qwen2.5:3b}
-      OLLAMA_MODEL_PLANNER: ${OLLAMA_MODEL_PLANNER:-qwen2.5:3b}
-      OLLAMA_MODEL_EMBED: ${OLLAMA_MODEL_EMBED:-nomic-embed-text}
-      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-4096}
-      OLLAMA_NUM_PREDICT: ${OLLAMA_NUM_PREDICT:-2048}
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-at-least-32-chars}
-      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
-    networks:
-      - internal
-
-  frontend:
-    build:
-      context: ./frontend
-      target: ${BUILD_TARGET:-dev}
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-    depends_on:
-      - backend
-    environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-    networks:
-      - internal
-      - public
 
 volumes:
   postgres-data:

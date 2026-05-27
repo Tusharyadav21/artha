@@ -25,12 +25,53 @@ class WordStamp:
     end: float
 
 class VideoGenService:
+    """
+    Purpose:
+        Orchestrates the end-to-end pipeline for generating technical short-form videos.
+
+    Responsibilities:
+        - Generate structured video scripts (planning + detailing) via LLM.
+        - Synthesize narration audio using TTS.
+        - Render code screenshots via headless browser (Playwright).
+        - Assemble final video assets using Remotion.
+
+    Dependencies:
+        - OllamaClient: For script generation.
+        - Playwright: For visual rendering.
+        - MoviePy/Remotion: For video assembly.
+        - soundfile/numpy: For mock audio synthesis.
+
+    Architectural constraints:
+        - Heavy rendering tasks (Remotion) must be run in thread pools to avoid blocking the async loop.
+        - Output files are stored in the 'outputs/' directory.
+    """
     def __init__(self):
         self.ollama = OllamaClient()
         self.output_dir = Path("outputs")
         self.output_dir.mkdir(exist_ok=True)
 
     async def generate_script(self, topic: str) -> Dict[str, Any]:
+        """
+        Purpose:
+            Create a detailed, scene-by-scene script for a technical video.
+
+        Responsibilities:
+            - Pass 1 (Planner): Generate high-level structure, timing, and narration.
+            - Pass 2 (Detailer): Generate specific code snippets and camera focus for 'code' scenes.
+
+        Inputs:
+            topic (str): The subject of the video.
+
+        Outputs:
+            Dict[str, Any]: The complete video timeline with a list of detailed scenes.
+
+        Execution flow:
+            1. Call Ollama planner model to generate JSON structure (title, duration, scenes).
+            2. Parse JSON response.
+            3. Iterate through scenes; if type is 'code', call Ollama reasoner to generate code/highlights.
+            4. Update scenes with detailed technical content.
+            5. Return final plan.
+        """
         # Pass 1: Planner - High level scene structure and narration
         plan_prompt = f"""
         Plan a 40-second technical YouTube Short about: {topic}.
@@ -48,7 +89,7 @@ class VideoGenService:
             }}
         """
         plan_response = await self.ollama.generate(
-            plan_prompt, 
+            plan_prompt,
             model_name=self.ollama.settings.ollama_model_planner,
             format="json"
         )
@@ -81,7 +122,32 @@ class VideoGenService:
         return plan
 
     def _parse_json(self, text: str) -> Dict[str, Any]:
-        """Parse JSON from LLM response with cleanup and extraction."""
+        """
+        Purpose:
+            Extract and sanitize JSON from LLM responses.
+
+        Responsibilities:
+            - Strip markdown fences.
+            - Extract content between the first '{' and last '}'.
+            - Attempt recovery from common JSON errors (e.g., single quotes).
+
+        Inputs:
+            text (str): Raw LLM response.
+
+        Outputs:
+            Dict[str, Any]: Parsed JSON object.
+
+        Exceptions:
+            ValueError: Raised if JSON cannot be parsed after all recovery attempts.
+
+        Execution flow:
+            1. Trim whitespace.
+            2. Remove markdown code fences.
+            3. Isolate outermost JSON object via indices.
+            4. Attempt json.loads().
+            5. Fallback to ast.literal_eval for Python-like dicts.
+            6. Final fallback via regex replacement of single quotes.
+        """
         original_text = text
         text = text.strip()
         
@@ -114,6 +180,28 @@ class VideoGenService:
                     raise
 
     async def synthesize_voice(self, text: str, voice: str = "af_heart", speed: float = 1.1) -> str:
+        """
+        Purpose:
+            Generate audio narration for a given text.
+
+        Responsibilities:
+            - Estimate audio duration based on word count.
+            - Generate a silent audio file (mock implementation).
+
+        Inputs:
+            text (str): Narration text.
+            voice (str): Voice model identifier.
+            speed (float): Playback speed multiplier.
+
+        Outputs:
+            str: Path to the generated .wav file.
+
+        Execution flow:
+            1. Calculate estimated duration (avg 150 wpm).
+            2. Create silent numpy array.
+            3. Write array to disk via soundfile.
+            4. Return absolute path.
+        """
         output_path = self.output_dir / "audio.wav"
         
         # Calculate duration based on word count (avg 150 words per minute)
@@ -171,12 +259,12 @@ class VideoGenService:
 
         # Construct the Remotion render command
         cmd = [
-            "npx", "remotion", "render",
+            "bunx", "remotion", "render",
             "src/index.ts", "Short",
             str(output_path.absolute()),
             "--props", props
         ]
-
+        
         # Find browser executable
         browser_path = self._find_browser()
         if browser_path:
@@ -184,7 +272,7 @@ class VideoGenService:
         else:
             logger.warning("No browser executable found, Remotion may attempt to download one")
 
-
+        
         logger.info(f"Starting Remotion render for {output_name}")
 
         try:
@@ -214,7 +302,7 @@ class VideoGenService:
                 raise Exception(f"Remotion rendering failed: {stderr}")
 
             logger.info(f"Remotion render complete: {output_path}")
-            return str(output_path)
+            return f"outputs/{output_name}"
         except Exception as e:
             logger.error(f"Failed to assemble video: {str(e)}")
             raise

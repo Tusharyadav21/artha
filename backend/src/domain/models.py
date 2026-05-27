@@ -30,10 +30,21 @@ from src.core.database import Base
 
 
 def utcnow() -> datetime:
+    """
+    Purpose:
+        Returns current UTC datetime for consistent timestamping across the system.
+    """
     return datetime.now(UTC)
 
 
 class TimestampMixin:
+    """
+    Purpose:
+        Provides standardized creation and update timestamps.
+
+    Responsibilities:
+        - Manage created_at and updated_at columns with server-side defaults.
+    """
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utcnow,
@@ -51,6 +62,13 @@ class TimestampMixin:
 
 
 class UUIDPrimaryKeyMixin:
+    """
+    Purpose:
+        Standardizes UUID-based primary keys.
+
+    Responsibilities:
+        - Ensure all inheriting models use UUID4 for IDs.
+    """
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
@@ -64,12 +82,14 @@ class UUIDPrimaryKeyMixin:
 
 
 class MessageRole(StrEnum):
+    """Purpose: Defines the role of a message sender in a conversation."""
     USER = "user"
     ASSISTANT = "assistant"
     SYSTEM = "system"
 
 
 class DocumentStatus(StrEnum):
+    """Purpose: Tracks the processing lifecycle of an uploaded document."""
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -77,18 +97,21 @@ class DocumentStatus(StrEnum):
 
 
 class ThemePreference(StrEnum):
+    """Purpose: Stores user-selected UI theme settings."""
     SYSTEM = "system"
     LIGHT = "light"
     DARK = "dark"
 
 
 class HomeTab(StrEnum):
+    """Purpose: Defines the default landing tab for the user interface."""
     CHAT = "chat"
     LIBRARY = "library"
     SETTINGS = "settings"
 
 
 class ChatScopeMode(StrEnum):
+    """Purpose: Controls the scope of new chat sessions (clear vs remember)."""
     CLEAR = "clear"
     REMEMBER = "remember"
     ALL_COMPLETED = "all-completed"
@@ -100,6 +123,21 @@ class ChatScopeMode(StrEnum):
 
 
 class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    Purpose:
+        Central entity for user authentication and preferences.
+
+    Responsibilities:
+        - Manage account identity and unique email constraints.
+        - Securely store hashed passwords.
+        - Persist UI and session preferences.
+
+    Dependencies:
+        - SQLAlchemy Base.
+
+    Architectural constraints:
+        - Email addresses must be unique and normalized to lowercase.
+    """
     __tablename__ = "users"
 
     email: Mapped[str] = mapped_column(
@@ -157,6 +195,21 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 
 class Project(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    Purpose:
+        Logical container for documents and conversations.
+
+    Responsibilities:
+        - Isolate documents and chat history per user and project.
+        - Manage project-specific system prompts for RAG.
+
+    Dependencies:
+        - User model for ownership.
+
+    Architectural constraints:
+        - All entities (Documents, Conversations) must be scoped to a Project.
+        - Enforce unique project names per user.
+    """
     __tablename__ = "projects"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
@@ -199,6 +252,20 @@ class Project(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 
 class Conversation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    Purpose:
+        Represents a discrete chat session within a project.
+
+    Responsibilities:
+        - Group messages chronologically.
+        - Associate session metadata (title) with a project.
+
+    Dependencies:
+        - Project model for scoping.
+
+    Architectural constraints:
+        - Must be strictly linked to a Project via ForeignKey.
+    """
     __tablename__ = "conversations"
 
     project_id: Mapped[uuid.UUID] = mapped_column(
@@ -226,6 +293,20 @@ class Conversation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 
 class Message(UUIDPrimaryKeyMixin, Base):
+    """
+    Purpose:
+        Stores individual chat turns within a conversation.
+
+    Responsibilities:
+        - Track sender role (User, Assistant, System).
+        - Store text content and structured metadata (citations, feedback).
+
+    Dependencies:
+        - Conversation model.
+
+    Architectural constraints:
+        - Indexed by conversation_id and created_at for efficient chronological retrieval.
+    """
     __tablename__ = "messages"
 
     conversation_id: Mapped[uuid.UUID] = mapped_column(
@@ -276,6 +357,22 @@ class Message(UUIDPrimaryKeyMixin, Base):
 
 
 class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    Purpose:
+        Represents an uploaded source file.
+
+    Responsibilities:
+        - Track raw file content and MIME type.
+        - Manage processing lifecycle (PENDING -> PROCESSING -> COMPLETED/FAILED).
+        - Store content hashes for deduplication.
+
+    Dependencies:
+        - Project model.
+
+    Architectural constraints:
+        - Status transitions must be strictly managed by the ingestion worker.
+        - Source bytes stored as LargeBinary (migration to object storage pending).
+    """
     __tablename__ = "documents"
 
     project_id: Mapped[uuid.UUID] = mapped_column(
@@ -346,6 +443,22 @@ class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 
 class DocumentChunk(UUIDPrimaryKeyMixin, Base):
+    """
+    Purpose:
+        Smallest unit of a document used for semantic search.
+
+    Responsibilities:
+        - Store text chunks and their corresponding high-dimensional embeddings.
+        - Maintain chunk ordering relative to the parent document.
+
+    Dependencies:
+        - Document model.
+        - pgvector extension for vector storage.
+
+    Architectural constraints:
+        - Embedding must be exactly 768 dimensions.
+        - Unique constraint on (document_id, chunk_index).
+    """
     __tablename__ = "document_chunks"
 
     document_id: Mapped[uuid.UUID] = mapped_column(
@@ -409,6 +522,20 @@ class DocumentChunk(UUIDPrimaryKeyMixin, Base):
 
 
 class GeneratedVideo(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    Purpose:
+        Tracks metadata of videos produced by the generation pipeline.
+
+    Responsibilities:
+        - Store paths to the final mp4 file and associated audio/image assets.
+        - Link generated content to the requesting user.
+
+    Dependencies:
+        - User model.
+
+    Architectural constraints:
+        - Paths are stored as strings; assumes file system or object storage consistency.
+    """
     __tablename__ = "generated_videos"
 
     user_id: Mapped[uuid.UUID] = mapped_column(

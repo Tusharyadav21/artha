@@ -15,6 +15,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback } from "@/components/app/ui-avatar"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { MonitorIcon, SunIcon, MoonIcon, CheckIcon } from "lucide-react"
 
 export function SettingsView() {
   const { user, isSavingSettings, updateUserSettings } = useWorkspace()
@@ -22,7 +26,7 @@ export function SettingsView() {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
-      <TabsList className="w-fit">
+      <TabsList className="w-fit" variant="line">
         <TabsTrigger value="profile">
           Profile
         </TabsTrigger>
@@ -119,7 +123,7 @@ function ProfileSettingsForm({
 
   return (
     <form
-      className="grid gap-4 md:max-w-xl"
+      className="space-y-6"
       onSubmit={(event) => {
         event.preventDefault()
         void onSave({
@@ -127,35 +131,55 @@ function ProfileSettingsForm({
         })
       }}
     >
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">Display name</label>
-        <Input
-          value={displayName}
-          onChange={(event) => setDisplayName(event.target.value)}
-          placeholder="Workspace owner"
-        />
+      <div className="flex items-center gap-6">
+        <Avatar size="lg">
+          <AvatarFallback className="text-lg bg-primary/10 text-primary font-bold">
+            {email.slice(0, 1).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 space-y-1">
+          <h3 className="text-lg font-semibold">{displayName || "Workspace Owner"}</h3>
+          <p className="text-sm text-muted-foreground">{email}</p>
+        </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">Email</label>
-        <Input value={email} readOnly />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">Member since</label>
-        <Input
-          value={
-            createdAt
-              ? new Intl.DateTimeFormat(undefined, {
-                  dateStyle: "full",
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Display Name</label>
+          <Input
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            placeholder="e.g. Alex"
+            className="bg-muted/30"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email Address</label>
+          <div className="relative">
+            <Input value={email} readOnly className="bg-muted/50 opacity-70 pr-20" />
+            <Badge variant="outline" className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] uppercase">Primary</Badge>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member Since</label>
+          <Input
+            value={
+              createdAt
+                ? new Intl.DateTimeFormat(undefined, {
+                  dateStyle: "medium",
                 }).format(new Date(createdAt))
-              : ""
-          }
-          readOnly
-        />
+                : ""
+            }
+            readOnly
+            className="bg-muted/50 opacity-70"
+          />
+        </div>
       </div>
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isSavingSettings}>
-          <SaveIcon data-icon="inline-start" />
-          Save profile
+
+      <div className="flex justify-end pt-4 border-t border-border/50">
+        <Button type="submit" disabled={isSavingSettings} className="px-6">
+          <SaveIcon className="size-4 mr-2" />
+          Update Profile
         </Button>
       </div>
     </form>
@@ -182,7 +206,7 @@ function AppearanceSettingsForm({
 
   return (
     <form
-      className="grid gap-4 md:max-w-xl"
+      className="space-y-8"
       onSubmit={(event) => {
         event.preventDefault()
         void onSave({
@@ -191,35 +215,53 @@ function AppearanceSettingsForm({
         })
       }}
     >
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">Theme preference</label>
-        <Select
-          value={themePreference}
-          onChange={(event) =>
-            setThemePreference(
-              event.target.value as "system" | "light" | "dark"
-            )
-          }
-        >
-          <option value="system">System</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-        </Select>
+      <div className="space-y-4">
+        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Theme Preference</label>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { id: "light", icon: SunIcon, label: "Light" },
+            { id: "dark", icon: MoonIcon, label: "Dark" },
+            { id: "system", icon: MonitorIcon, label: "System" },
+          ].map((theme) => (
+            <button
+              key={theme.id}
+              type="button"
+              onClick={() => setThemePreference(theme.id as any)}
+              className={cn(
+                "flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all group/theme relative",
+                themePreference === theme.id
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border/50 hover:border-border hover:bg-muted"
+              )}
+            >
+              <theme.icon className={cn("size-6", themePreference === theme.id ? "text-primary" : "text-muted-foreground group-hover/theme:text-foreground")} />
+              <span className="text-xs font-medium">{theme.label}</span>
+              {themePreference === theme.id && (
+                <div className="absolute top-1.5 right-1.5 size-4 bg-primary rounded-full flex items-center justify-center">
+                  <CheckIcon className="size-2.5 text-primary-foreground" />
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">Sidebar default</label>
+
+      <div className="flex flex-col gap-2 max-w-sm">
+        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sidebar Default State</label>
         <Select
           value={sidebarCollapsed}
           onChange={(event) => setSidebarCollapsed(event.target.value)}
+          className="bg-muted/30"
         >
-          <option value="expanded">Expanded</option>
-          <option value="collapsed">Collapsed</option>
+          <option value="expanded">Expanded by default</option>
+          <option value="collapsed">Collapsed by default</option>
         </Select>
       </div>
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isSavingSettings}>
-          <SaveIcon data-icon="inline-start" />
-          Save appearance
+
+      <div className="flex justify-end pt-4 border-t border-border/50">
+        <Button type="submit" disabled={isSavingSettings} className="px-6">
+          <SaveIcon className="size-4 mr-2" />
+          Update Appearance
         </Button>
       </div>
     </form>
@@ -245,7 +287,7 @@ function ChatDefaultsForm({
 
   return (
     <form
-      className="grid gap-4 md:max-w-xl"
+      className="space-y-6"
       onSubmit={(event) => {
         event.preventDefault()
         void onSave({
@@ -254,38 +296,45 @@ function ChatDefaultsForm({
         })
       }}
     >
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">Default home route</label>
-        <Select
-          value={homeTab}
-          onChange={(event) =>
-            setHomeTab(event.target.value as "chat" | "library" | "settings")
-          }
-        >
-          <option value="chat">Chat</option>
-          <option value="library">Library</option>
-          <option value="settings">Settings</option>
-        </Select>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Default Home Route</label>
+          <Select
+            value={homeTab}
+            onChange={(event) =>
+              setHomeTab(event.target.value as "chat" | "library" | "settings")
+            }
+            className="bg-muted/30"
+          >
+            <option value="chat">Chat workspace</option>
+            <option value="library">Library & Documents</option>
+            <option value="settings">Settings & Profile</option>
+          </Select>
+          <p className="text-[10px] text-muted-foreground opacity-70">Where the app lands after login</p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">New Chat Scope Preset</label>
+          <Select
+            value={scopeMode}
+            onChange={(event) =>
+              setScopeMode(
+                event.target.value as "clear" | "remember" | "all-completed"
+              )
+            }
+            className="bg-muted/30"
+          >
+            <option value="clear">Start fresh (no documents)</option>
+            <option value="remember">Keep current selection</option>
+            <option value="all-completed">Include all ready files</option>
+          </Select>
+          <p className="text-[10px] text-muted-foreground opacity-70">Default document seeding for new chats</p>
+        </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">New chat scope preset</label>
-        <Select
-          value={scopeMode}
-          onChange={(event) =>
-            setScopeMode(
-              event.target.value as "clear" | "remember" | "all-completed"
-            )
-          }
-        >
-          <option value="clear">Start with no scoped documents</option>
-          <option value="remember">Reuse current document scope</option>
-          <option value="all-completed">Preselect all completed documents</option>
-        </Select>
-      </div>
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isSavingSettings}>
-          <SaveIcon data-icon="inline-start" />
-          Save chat defaults
+
+      <div className="flex justify-end pt-4 border-t border-border/50">
+        <Button type="submit" disabled={isSavingSettings} className="px-6">
+          <SaveIcon className="size-4 mr-2" />
+          Update Defaults
         </Button>
       </div>
     </form>

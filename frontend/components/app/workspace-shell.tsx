@@ -9,8 +9,10 @@ import {
   MoonStarIcon,
   SettingsIcon,
   SunMediumIcon,
+  CheckIcon,
 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
+import { motion } from "framer-motion"
 
 import { useWorkspace, WorkspaceProvider } from "@/components/app/workspace-provider"
 import { Sidebar } from "@/components/app/sidebar"
@@ -29,8 +31,13 @@ import {
 import { Select } from "@/components/ui/select"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/app/ui-tooltip"
 import { type DocumentItem } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { scaleIn } from "@/lib/motion"
+import { Badge } from "../ui/badge"
 
 function nextThemePreference(current: "system" | "light" | "dark") {
   if (current === "system") {
@@ -53,12 +60,6 @@ function themeLabel(current: "system" | "light" | "dark") {
 }
 
 function pageMeta(pathname: string) {
-  if (pathname.startsWith("/library")) {
-    return {
-      title: "Project library",
-      description: "Manage documents, browse conversations, and tune project prompts.",
-    }
-  }
   if (pathname.startsWith("/settings")) {
     return {
       title: "Personal settings",
@@ -202,20 +203,23 @@ function NewChatDialogBody({
     <Dialog open>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Start a new chat</DialogTitle>
-          <CardDescription>
+          <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+            <MessageSquarePlusIcon className="size-6 text-primary" />
+          </div>
+          <DialogTitle className="text-2xl">Start a new chat</DialogTitle>
+          <CardDescription className="text-sm">
             Choose the project and document scope that should seed the next chat
-            draft. The backend conversation will still be created on your first
-            message.
+            draft.
           </CardDescription>
         </DialogHeader>
         <form className="mt-5 flex flex-col gap-5" onSubmit={handleSubmit}>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Project</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Select Project</label>
               <Select
                 value={projectId}
                 onChange={(event) => setProjectId(event.target.value)}
+                className="bg-muted/30"
               >
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
@@ -225,90 +229,92 @@ function NewChatDialogBody({
               </Select>
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">Scope preset</label>
-              <Select
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Scope Preset</label>
+              <Tabs
                 value={scopeMode}
-                onChange={(event) =>
-                  setScopeMode(
-                    event.target.value as "clear" | "remember" | "all-completed"
-                  )
-                }
+                onValueChange={(val) => setScopeMode(val as "clear" | "remember" | "all-completed")}
+                className="w-full"
               >
-                <option value="clear">Start with no scoped documents</option>
-                <option value="remember">Reuse the current scoped set</option>
-                <option value="all-completed">
-                  Preselect every completed document
-                </option>
-              </Select>
+                <TabsList className="w-full bg-muted/30" variant="line">
+                  <TabsTrigger value="clear" className="text-xs">Clear</TabsTrigger>
+                  <TabsTrigger value="remember" className="text-xs">Remember</TabsTrigger>
+                  <TabsTrigger value="all-completed" className="text-xs">All</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
           </div>
 
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Document scope</label>
-              <p className="text-xs text-muted-foreground">
-                {checkedDocumentIds.length} selected
-              </p>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Document Scope</label>
+              <Badge variant="secondary" className="h-4 px-1.5 text-[9px]">
+                {checkedDocumentIds.length} SELECTED
+              </Badge>
             </div>
-            <Card>
-              <CardContent className="pt-5">
+            <Card className="border-border/50 bg-muted/10">
+              <CardContent className="p-2">
                 {isLoadingDocuments ? (
-                  <div className="flex flex-col gap-2">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
+                  <div className="flex flex-col gap-2 p-2">
+                    <Skeleton className="h-10 w-full rounded-lg" />
+                    <Skeleton className="h-10 w-full rounded-lg" />
                   </div>
                 ) : documents.length ? (
-                  <div className="grid gap-2">
-                    {documents.map((document) => {
-                      const isChecked = checkedDocumentIds.includes(document.id)
-                      return (
-                        <button
-                          key={document.id}
-                          type="button"
-                          className={cn(
-                            "rounded-xl border px-3 py-3 text-left transition",
-                            isChecked
-                              ? "border-primary/30 bg-primary/10"
-                              : "hover:bg-muted"
-                          )}
-                          onClick={() =>
-                            setCheckedDocumentIds((current) =>
-                              current.includes(document.id)
-                                ? current.filter((id) => id !== document.id)
-                                : [...current, document.id]
-                            )
-                          }
-                        >
-                          <p className="truncate text-sm font-medium">
-                            {document.filename}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {Math.ceil(document.file_size / 1024)} KB
-                          </p>
-                        </button>
-                      )
-                    })}
-                  </div>
+                  <ScrollArea className="h-[200px]">
+                    <div className="grid gap-1 p-1">
+                      {documents.map((document) => {
+                        const isChecked = checkedDocumentIds.includes(document.id)
+                        return (
+                          <button
+                            key={document.id}
+                            type="button"
+                            className={cn(
+                              "flex items-center justify-between rounded-lg px-3 py-2 text-left transition-all",
+                              isChecked
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "hover:bg-muted"
+                            )}
+                            onClick={() =>
+                              setCheckedDocumentIds((current) =>
+                                current.includes(document.id)
+                                  ? current.filter((id) => id !== document.id)
+                                  : [...current, document.id]
+                              )
+                            }
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-medium">
+                                {document.filename}
+                              </p>
+                            </div>
+                            {isChecked && <CheckIcon className="size-3 ml-2 shrink-0" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </ScrollArea>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
-                    This project has no completed documents yet.
-                  </p>
+                  <div className="py-8 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      No documents available for this project.
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
             <Button
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
+              className="px-6"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={!projectId}>
-              <MessageSquarePlusIcon data-icon="inline-start" />
-              Open draft chat
+            <Button type="submit" disabled={!projectId} className="px-6 shadow-lg shadow-primary/10">
+              <MessageSquarePlusIcon className="size-4 mr-2" />
+              Open Draft
             </Button>
           </div>
         </form>
@@ -336,22 +342,30 @@ function WorkspaceFrame({ children }: React.PropsWithChildren) {
 
   if (isLoadingSession || !user) {
     return (
-      <main className="min-h-svh bg-background p-6">
-        <div className="grid min-h-[calc(100svh-3rem)] gap-6 lg:grid-cols-[280px_1fr]">
-          <Card>
-            <CardContent className="flex flex-col gap-3 pt-5">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex flex-col gap-4 pt-5">
-              <Skeleton className="h-8 w-48" />
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-32 w-full" />
-            </CardContent>
-          </Card>
+      <main className="min-h-svh bg-background flex">
+        <div className="hidden lg:block w-80 border-r border-sidebar-border p-4 space-y-4">
+          <Skeleton className="h-10 w-full rounded-xl" />
+          <div className="space-y-2 pt-8">
+            <Skeleton className="h-9 w-full rounded-lg" />
+            <Skeleton className="h-9 w-full rounded-lg" />
+            <Skeleton className="h-9 w-full rounded-lg" />
+          </div>
+          <div className="pt-12 space-y-2">
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col">
+          <div className="h-14 border-b border-border flex items-center px-6">
+            <Skeleton className="h-6 w-48" />
+          </div>
+          <div className="flex-1 p-8 space-y-6">
+            <div className="flex justify-between">
+              <Skeleton className="h-10 w-64" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+            <Skeleton className="h-[400px] w-full rounded-2xl" />
+          </div>
         </div>
       </main>
     )
@@ -365,74 +379,99 @@ function WorkspaceFrame({ children }: React.PropsWithChildren) {
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-border bg-background/85 px-4 py-3 backdrop-blur">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-start gap-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="lg:hidden"
-                  aria-label="Open navigation"
-                  onClick={() => setIsMobileSidebarOpen(true)}
-                >
-                  <MenuIcon data-icon="inline-start" />
-                </Button>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-primary">
-                    {activeProject?.name || "No project selected"}
-                  </p>
-                  <h1 className="font-heading text-2xl font-semibold">
-                    {meta.title}
-                  </h1>
-                  <p className="max-w-2xl text-sm text-muted-foreground">
-                    {meta.description}
-                  </p>
-                </div>
+          <header className="sticky top-0 z-20 border-b border-border bg-background/85 h-14 px-4 flex items-center justify-between backdrop-blur">
+            <div className="flex items-center gap-4">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="lg:hidden"
+                aria-label="Open navigation"
+                onClick={() => setIsMobileSidebarOpen(true)}
+              >
+                <MenuIcon className="size-5" />
+              </Button>
+              <div className="flex items-baseline gap-2">
+                <h1 className="font-heading text-lg font-bold tracking-tight">
+                  {meta.title}
+                </h1>
+                <span className="text-muted-foreground text-xs">•</span>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80">
+                  {activeProject?.name || "Global"}
+                </p>
               </div>
+            </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsNewChatOpen(true)}
-                >
-                  <MessageSquarePlusIcon data-icon="inline-start" />
-                  New chat
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() =>
-                    void updateUserSettings({
-                      theme_preference: nextThemePreference(
-                        user.theme_preference
-                      ),
-                    })
-                  }
-                >
-                  {user.theme_preference === "system" ? (
-                    <MonitorIcon data-icon="inline-start" />
-                  ) : user.theme_preference === "light" ? (
-                    <SunMediumIcon data-icon="inline-start" />
-                  ) : (
-                    <MoonStarIcon data-icon="inline-start" />
-                  )}
-                  {themeLabel(user.theme_preference)}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => router.push("/settings")}
-                >
-                  <SettingsIcon data-icon="inline-start" />
-                  Settings
-                </Button>
-                <Button type="button" variant="ghost" onClick={signOut}>
-                  <LogOutIcon data-icon="inline-start" />
-                  Sign out
-                </Button>
-              </div>
+            <div className="flex items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="hover:bg-primary/5 hover:text-primary transition-colors"
+                    onClick={() => setIsNewChatOpen(true)}
+                  >
+                    <MessageSquarePlusIcon className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>New Chat</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="hover:bg-primary/5 hover:text-primary transition-colors"
+                    onClick={() =>
+                      void updateUserSettings({
+                        theme_preference: nextThemePreference(
+                          user.theme_preference
+                        ),
+                      })
+                    }
+                  >
+                    {user.theme_preference === "system" ? (
+                      <MonitorIcon className="size-4" />
+                    ) : user.theme_preference === "light" ? (
+                      <SunMediumIcon className="size-4" />
+                    ) : (
+                      <MoonStarIcon className="size-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Theme: {themeLabel(user.theme_preference)}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="hover:bg-primary/5 hover:text-primary transition-colors"
+                    onClick={() => router.push("/settings")}
+                  >
+                    <SettingsIcon className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Settings</TooltipContent>
+              </Tooltip>
+              <div className="w-px h-4 bg-border mx-1" />
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="hover:bg-destructive/5 hover:text-destructive transition-colors"
+                    onClick={signOut}
+                  >
+                    <LogOutIcon className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Sign out</TooltipContent>
+              </Tooltip>
             </div>
           </header>
 

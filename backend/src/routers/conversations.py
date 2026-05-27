@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.dependencies import get_current_user
 from src.core.database import get_db
-from src.domain.models import User
+from src.domain.models import Conversation, User
 from src.repositories.conversations import ConversationRepository
 from src.repositories.projects import ProjectRepository
 from src.schemas.chat import ConversationDetail, ConversationRead, PaginatedConversations
@@ -15,6 +15,31 @@ router = APIRouter(prefix="/api/projects/{project_id}/conversations", tags=["con
 
 
 async def _ensure_project(db: AsyncSession, project_id: UUID, user_id: UUID) -> None:
+    """
+    Purpose:
+        Verifies that a project exists and belongs to the requesting user.
+
+    Args:
+        db (AsyncSession):
+            Database session dependency.
+
+        project_id (UUID):
+            The ID of the project to verify.
+
+        user_id (UUID):
+            The ID of the user requesting access.
+
+    Returns:
+        None
+
+    Raises:
+        HTTPException:
+            404 Not Found if the project does not exist or is not owned by the user.
+
+    Flow:
+        1. Query the ProjectRepository for the specified project and user.
+        2. Raise 404 if no matching project is found.
+    """
     if await ProjectRepository(db).get_for_user(project_id, user_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
@@ -26,7 +51,41 @@ async def list_conversations(
     db: Annotated[AsyncSession, Depends(get_db)],
     skip: int = 0,
     limit: int = 100,
-):
+) -> PaginatedConversations:
+    """
+    Purpose:
+        Lists all conversations associated with a specific project.
+
+    Responsibilities:
+        - Verify user has access to the project
+        - Fetch paginated conversation list from repository
+
+    Args:
+        project_id (UUID):
+            The ID of the project.
+
+        current_user (Annotated[User, Depends(get_current_user)]):
+            The authenticated user.
+
+        db (Annotated[AsyncSession, Depends(get_db)]):
+            Database session dependency.
+
+        skip (int, optional):
+            Number of records to skip for pagination. Defaults to 0.
+
+        limit (int, optional):
+            Maximum number of records to return. Defaults to 100.
+
+    Returns:
+        PaginatedConversations:
+            A paginated list of conversations and the total count.
+
+    Flow:
+        1. Validate project ownership using _ensure_project.
+        2. Call ConversationRepository to retrieve a slice of conversations.
+        3. Map database models to ConversationRead schemas.
+        4. Return paginated response.
+    """
     await _ensure_project(db, project_id, current_user.id)
     items, total = await ConversationRepository(db).list_for_project(
         project_id,
@@ -45,7 +104,42 @@ async def get_conversation(
     conversation_id: UUID,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
-):
+) -> Conversation:
+    """
+    Purpose:
+        Retrieves detailed information for a specific conversation.
+
+    Responsibilities:
+        - Verify user has access to the project
+        - Fetch conversation by ID and project scope
+
+    Args:
+        project_id (UUID):
+            The ID of the parent project.
+
+        conversation_id (UUID):
+            The ID of the conversation to retrieve.
+
+        current_user (Annotated[User, Depends(get_current_user)]):
+            The authenticated user.
+
+        db (Annotated[AsyncSession, Depends(get_db)]):
+            Database session dependency.
+
+    Returns:
+        ConversationDetail:
+            The detailed conversation record.
+
+    Raises:
+        HTTPException:
+            404 Not Found if project not found or conversation doesn't belong to project.
+
+    Flow:
+        1. Validate project ownership using _ensure_project.
+        2. Retrieve conversation via ConversationRepository scoped by project.
+        3. Raise 404 if conversation is not found.
+        4. Return conversation details.
+    """
     await _ensure_project(db, project_id, current_user.id)
     conversation = await ConversationRepository(db).get_for_project(conversation_id, project_id)
     if conversation is None:

@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Music, Video, Type, Palette, ArrowRight, CheckCircle2 } from "lucide-react"
+import { Loader2, Music, Video, Type, Palette, ArrowRight, CheckCircle2, History, PlusCircle, LayoutIcon, CodeIcon, ClockIcon } from "lucide-react"
 import { apiFetch, apiUrl } from "@/lib/api"
 import { TOKEN_KEY } from "@/lib/app-storage"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { History, PlusCircle } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { motion, AnimatePresence } from "framer-motion"
+import { fadeUp, fadeIn, stagger } from "@/lib/motion"
 
 interface HistoryItem {
   id: string
@@ -89,23 +92,50 @@ export function VideoCreator() {
   return (
     <div className="max-w-4xl mx-auto py-10 px-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold tracking-tight">YouTube Shorts Creator</h2>
-          <TabsList>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Shorts Creator</h2>
+            <p className="text-sm text-muted-foreground mt-1">Generate viral YouTube Shorts from any topic.</p>
+          </div>
+          <TabsList variant="line" className="bg-muted/30">
             <TabsTrigger value="create" className="flex items-center gap-2">
               <PlusCircle className="w-4 h-4" /> Create
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-2">
-              <History className="w-4 h-4" /> History
+              <History className="w-4 h-4" /> Library
             </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="create">
-          <div className="max-w-2xl mx-auto">
-            <div className="flex justify-between mb-8">
-              {[0, 1, 2].map((s) => (
-                <div key={s} className={`h-1 flex-1 mx-1 rounded-full ${s <= step ? 'bg-primary' : 'bg-muted'}`} />
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-center justify-center gap-4 mb-12 relative">
+              {[
+                { step: 0, label: "Topic" },
+                { step: 1, label: "Timeline" },
+                { step: 2, label: "Render" },
+              ].map((s, idx) => (
+                <React.Fragment key={s.step}>
+                  <div className="flex flex-col items-center gap-2 relative z-10">
+                    <div className={cn(
+                      "size-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300",
+                      step === s.step ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-110" : 
+                      step > s.step ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/50 text-muted-foreground"
+                    )}>
+                      {step > s.step ? <CheckCircle2 className="size-5" /> : s.step + 1}
+                    </div>
+                    <span className={cn(
+                      "text-[10px] uppercase tracking-widest font-bold",
+                      step >= s.step ? "text-primary" : "text-muted-foreground"
+                    )}>{s.label}</span>
+                  </div>
+                  {idx < 2 && (
+                    <div className={cn(
+                      "h-[2px] flex-1 min-w-[40px] -mt-5 transition-colors duration-500",
+                      step > idx ? "bg-primary" : "bg-border"
+                    )} />
+                  )}
+                </React.Fragment>
               ))}
             </div>
 
@@ -129,56 +159,80 @@ export function VideoCreator() {
             )}
 
             {step === 1 && timeline && (
-              <Card className="max-w-4xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PlusCircle className="w-5 h-5 text-primary" />
-                    Review Timeline: {timeline.title}
-                  </CardTitle>
-                  <CardDescription>AI has generated a {timeline.duration}s timeline. You can edit each scene below.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {timeline.scenes.map((scene: any, idx: number) => (
-                    <div key={idx} className="p-4 border rounded-lg space-y-4 bg-muted/30">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold px-2 py-1 bg-primary/10 rounded uppercase">{scene.type} Scene</span>
-                        <span className="text-xs text-muted-foreground">{scene.start}s - {scene.end}s</span>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium opacity-70">Narration</label>
-                        <Textarea 
-                          value={scene.content}
-                          onChange={(e) => {
-                            const newScenes = [...timeline.scenes];
-                            newScenes[idx].content = e.target.value;
-                            setTimeline({...timeline, scenes: newScenes});
-                          }}
-                        />
-                      </div>
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold">{timeline.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Estimated duration: <span className="text-primary font-medium">{timeline.duration}s</span></p>
+                  </div>
+                  <Badge variant="outline" className="px-3 py-1">
+                    {timeline.scenes.length} Scenes
+                  </Badge>
+                </div>
 
-                      {scene.type === "code" && (
+                <div className="grid gap-4">
+                  {timeline.scenes.map((scene: any, idx: number) => (
+                    <Card key={idx} className="overflow-hidden border-border/50 bg-card/50 hover:border-primary/30 transition-colors">
+                      <div className="px-4 py-3 border-b border-border/50 bg-muted/20 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge className="capitalize h-5 px-1.5 text-[10px]">
+                            {scene.type === "code" ? <CodeIcon className="size-3 mr-1" /> : <LayoutIcon className="size-3 mr-1" />}
+                            {scene.type}
+                          </Badge>
+                          <span className="text-xs font-bold text-muted-foreground uppercase tracking-tighter">Scene {idx + 1}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground bg-background/50 px-2 py-0.5 rounded border">
+                          <ClockIcon className="size-3" />
+                          {scene.start}s - {scene.end}s
+                        </div>
+                      </div>
+                      <CardContent className="p-4 space-y-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-medium opacity-70">Code Snippet</label>
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                            <Type className="size-3" /> Narration
+                          </label>
                           <Textarea 
-                            className="font-mono text-xs"
-                            value={scene.code}
+                            className="text-sm min-h-[80px] bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary/30"
+                            value={scene.content}
                             onChange={(e) => {
                               const newScenes = [...timeline.scenes];
-                              newScenes[idx].code = e.target.value;
+                              newScenes[idx].content = e.target.value;
                               setTimeline({...timeline, scenes: newScenes});
                             }}
                           />
                         </div>
-                      )}
-                    </div>
+
+                        {scene.type === "code" && (
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                              <CodeIcon className="size-3" /> Code Snippet
+                            </label>
+                            <Textarea 
+                              className="font-mono text-xs bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary/30"
+                              value={scene.code}
+                              onChange={(e) => {
+                                const newScenes = [...timeline.scenes];
+                                newScenes[idx].code = e.target.value;
+                                setTimeline({...timeline, scenes: newScenes});
+                              }}
+                            />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   ))}
-                  
-                  <Button className="w-full" onClick={finalizeVideo} disabled={loading}>
-                    {loading ? <Loader2 className="animate-spin" /> : <><Video className="mr-2 h-4 w-4" /> Render Final Video</>}
+                </div>
+                
+                <div className="pt-6 border-t border-border/50">
+                  <Button size="lg" className="w-full shadow-lg shadow-primary/20" onClick={finalizeVideo} disabled={loading}>
+                    {loading ? <Loader2 className="animate-spin" /> : <><Video className="mr-2 h-5 w-5" /> Render Final Video</>}
                   </Button>
-                </CardContent>
-              </Card>
+                </div>
+              </motion.div>
             )}
 
             {step === 2 && (
@@ -191,7 +245,7 @@ export function VideoCreator() {
                   <CardDescription>Your YouTube Short is ready to download.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 text-center">
-                  <div className="aspect-[9/16] bg-black rounded-lg overflow-hidden">
+                  <div className="aspect-9/16 bg-black rounded-lg overflow-hidden">
                     <video
                       src={apiUrl(videoUrl)}
                       controls
@@ -210,33 +264,48 @@ export function VideoCreator() {
 
         <TabsContent value="history">
           {history.length === 0 ? (
-            <div className="text-center py-20 bg-muted/20 rounded-xl border-2 border-dashed">
-              <Video className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p className="text-muted-foreground">No videos generated yet. Start creating!</p>
+            <div className="flex flex-col items-center justify-center py-32 bg-muted/20 rounded-3xl border-2 border-dashed border-border/50">
+              <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-6">
+                <Video className="w-8 h-8 opacity-40 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold">No videos yet</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-xs text-center">Start creating your first AI Short to see it in your library.</p>
+              <Button variant="outline" className="mt-6" onClick={() => setActiveTab("create")}>Get Started</Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <motion.div 
+              variants={stagger}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            >
               {history.map((vid) => (
-                <Card key={vid.id} className="overflow-hidden flex flex-col">
-                  <div className="aspect-[9/16] bg-black">
-                    <video 
-                      src={apiUrl(vid.video_url)} 
-                      controls 
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <CardHeader className="p-4">
-                    <CardTitle className="text-base line-clamp-1">{vid.title}</CardTitle>
-                    <CardDescription>{new Date(vid.created_at).toLocaleDateString()}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 mt-auto">
-                    <Button variant="outline" className="w-full text-xs" onClick={() => window.location.href = apiUrl(vid.video_url)}>
-                      Download MP4
-                    </Button>
-                  </CardContent>
-                </Card>
+                <motion.div variants={fadeUp} key={vid.id}>
+                  <Card className="overflow-hidden group/video border-border/50 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-1">
+                    <div className="aspect-9/16 bg-black relative overflow-hidden">
+                      <video 
+                        src={apiUrl(vid.video_url)} 
+                        className="w-full h-full object-contain transition-transform duration-500 group-hover/video:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/video:opacity-100 transition-opacity flex items-end p-4">
+                        <Button className="w-full h-9 text-xs" onClick={() => window.location.href = apiUrl(vid.video_url)}>
+                          Download Short
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-4 bg-card/50">
+                      <h4 className="text-sm font-bold truncate group-hover/video:text-primary transition-colors">{vid.title}</h4>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          {new Date(vid.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        <Badge variant="secondary" className="h-4 px-1.5 text-[9px] uppercase tracking-tighter">MP4</Badge>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </TabsContent>
       </Tabs>

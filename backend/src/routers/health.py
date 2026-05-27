@@ -11,7 +11,19 @@ router = APIRouter(prefix="/health", tags=["health"])
 
 
 async def check_database() -> tuple[bool, str]:
-    """Check database connection."""
+    """
+    Purpose:
+        Verifies connectivity to the PostgreSQL database.
+
+    Returns:
+        tuple[bool, str]:
+            (True, "ok") if connection is successful, otherwise (False, error_message).
+
+    Flow:
+        1. Access database engine.
+        2. Execute a simple "SELECT 1" query.
+        3. Return status based on success or exception.
+    """
     try:
         from src.core.database import engine
 
@@ -24,7 +36,20 @@ async def check_database() -> tuple[bool, str]:
 
 
 async def check_redis() -> tuple[bool, str]:
-    """Check Redis connection."""
+    """
+    Purpose:
+        Verifies connectivity to the Redis cache.
+
+    Returns:
+        tuple[bool, str]:
+            (True, "ok") if ping is successful, otherwise (False, error_message).
+
+    Flow:
+        1. Retrieve Redis URL from settings.
+        2. Create a temporary Redis client.
+        3. Send a ping command.
+        4. Close client and return status.
+    """
     try:
         import redis
 
@@ -39,7 +64,20 @@ async def check_redis() -> tuple[bool, str]:
 
 
 async def check_ollama() -> tuple[bool, str]:
-    """Check Ollama service is available."""
+    """
+    Purpose:
+        Verifies the Ollama LLM service is reachable and responding.
+
+    Returns:
+        tuple[bool, str]:
+            (True, "ok") if /api/tags returns 200, otherwise (False, error_message).
+
+    Flow:
+        1. Initialize an async HTTP client.
+        2. Request the tags endpoint from Ollama base URL.
+        3. Validate response status code.
+        4. Return status based on result.
+    """
     try:
         async with httpx.AsyncClient(timeout=5) as client:
             response = await client.get(f"{get_settings().ollama_base_url}/api/tags")
@@ -53,13 +91,38 @@ async def check_ollama() -> tuple[bool, str]:
 
 @router.get("")
 async def healthcheck() -> dict[str, str]:
-    """Basic health check."""
+    """
+    Purpose:
+        Provides a basic Liveness probe for the API.
+
+    Returns:
+        dict[str, str]:
+            Simple status map indicating the service is alive.
+    """
     return {"status": "ok"}
 
 
 @router.get("/ready", summary="Readiness probe")
 async def readiness_check() -> dict:
-    """Readiness probe - checks if service is ready to accept traffic."""
+    """
+    Purpose:
+        Provides a Readiness probe that checks all critical downstream dependencies.
+
+    Responsibilities:
+        - Check PostgreSQL connectivity
+        - Check Redis connectivity
+        - Check Ollama availability
+
+    Returns:
+        dict:
+            Object containing overall status ("healthy" or "degraded") and per-service details.
+
+    Flow:
+        1. Execute all dependency check functions.
+        2. Aggregate results into a detailed map.
+        3. Determine overall health based on whether all dependencies are ok.
+        4. Return combined status.
+    """
     results = {
         "database": await check_database(),
         "redis": await check_redis(),

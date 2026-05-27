@@ -8,6 +8,21 @@ logger = getLogger(__name__)
 
 
 class Settings(BaseSettings):
+    """
+    Purpose:
+        Centralized configuration management for the application.
+
+    Responsibilities:
+        - Load environment variables from .env file
+        - Validate critical settings (URLs, secrets)
+        - Provide typed access to application constants
+
+    Dependencies:
+        - pydantic_settings.BaseSettings
+
+    Notes:
+        - Use lru_cache for the get_settings() helper to avoid redundant re-loading.
+    """
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",
@@ -27,7 +42,7 @@ class Settings(BaseSettings):
     )
 
     ollama_base_url: str = Field(
-        default="http://localhost:11434",
+        default="http://host.docker.internal:11434",
         description="Ollama server base URL",
     )
     ollama_model_reasoner: str = Field(
@@ -53,6 +68,20 @@ class Settings(BaseSettings):
         description="Maximum tokens to predict",
         ge=1,
         le=4096,
+    )
+
+    reranker_model: str = Field(
+        default="BAAI/bge-reranker-base",
+        description="Cross-encoder model used to rerank retrieved chunks",
+    )
+    embed_cache_ttl_seconds: int = Field(
+        default=604800,
+        description="TTL for cached query embeddings in Redis (default 7 days)",
+        ge=0,
+    )
+    hyde_enabled: bool = Field(
+        default=True,
+        description="Enable HyDE query expansion for complex queries",
     )
 
     jwt_secret: str = Field(
@@ -95,7 +124,25 @@ class Settings(BaseSettings):
     @field_validator("database_url", "redis_url", "jwt_secret", mode="before")
     @classmethod
     def validate_env_vars(cls, v: str, info) -> str:
-        """Validate that required environment variables are set."""
+        """
+        Purpose:
+            Ensures required environment variables are non-empty.
+
+        Args:
+            v (str):
+                The value of the field being validated.
+
+            info:
+                Pydantic validation info.
+
+        Returns:
+            str:
+                The validated value.
+
+        Raises:
+            ValueError:
+                If the variable is None or empty.
+        """
         if v is None or v == "":
             raise ValueError(
                 f"Required environment variable {info.field_name} is not set"
@@ -105,4 +152,12 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    """
+    Purpose:
+        Provides a singleton instance of the application settings.
+
+    Returns:
+        Settings:
+            The cached application settings.
+    """
     return Settings()  # type: ignore[call-arg]

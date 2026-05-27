@@ -1,151 +1,48 @@
-# Engineering Rules — Next.js Application
+# ChatGPT Codex / Cursor / Windsurf - Frontend Developer Guide
 
-This project prioritizes:
-- Maintainability
-- Predictability
-- Reusability
-- Performance
-- Scalability
-- Clean architecture
-
-The codebase must avoid:
-- Patchwork fixes
-- Temporary hacks
-- Duplicate logic
-- Over-engineering
-- Deep prop drilling
-- Giant components
-- Unstructured state management
-- Mixed concerns
+This file provides system prompt directives, CLI references, and architecture boundaries for **ChatGPT Codex, Cursor, and Windsurf** agents when operating in the frontend directory.
 
 ---
 
-# Core Principles
+## 🤖 1. Operating & Coding Directives
 
-## 1. Never Patch — Refactor Properly
-Do not add workaround code beside broken logic.
-
-**BAD:**
-- Adding conditionals to bypass architectural problems
-- Creating duplicate APIs/components/hooks
-- Adding "temporary" fixes
-
-**GOOD:**
-- Refactor the root issue
-- Remove obsolete logic
-- Consolidate duplicated behavior
-- Improve architecture while fixing bugs
-
-Rule:
-> Every fix should leave the codebase cleaner than before.
+* **Follow Layer boundaries**: Keep component design clean. Keep business rules out of presentational UI and fetch helpers out of client layout views.
+* **Tailwind Sequential sorting**: Sort all visual classes in component styling: (1) Layout, (2) Sizing & spacing, (3) Typography, (4) Borders/colors, (5) Interactive transitions.
+* **Component Size constraint**: Components must remain modular (under 250 lines). Split logic into custom React hooks inside features.
 
 ---
 
-# Project Structure
-Use feature-first architecture.
+## 📂 2. Directory Layout
 
-```txt
-src/
-  app/
-  components/
-    ui/
-    shared/
-  features/
-    auth/
-    dashboard/
-    billing/
-  hooks/
-  lib/
-  services/
-  server/
-  stores/
-  types/
-  utils/
+```text
+frontend/
+├── src/
+│   ├── app/        # Next.js page layouts and route composition
+│   ├── components/ # Shared UI primitives & Shadcn blocks
+│   ├── features/   # Self-contained feature folders
+│   ├── hooks/      # Shared custom hooks
+│   └── lib/        # Shared utility scripts (apiFetch helper)
 ```
 
 ---
 
-# Folder Responsibilities
+## 🗺️ 3. Master Documentation Index
 
-## app/
-Only:
-* Routes
-* Layouts
-* Metadata
-* Server Components
-* Route-level composition
-
-Do NOT place:
-* Business logic
-* Fetch logic abstraction
-* Reusable UI logic
-
-## components/ui
-Pure reusable UI primitives.
-Examples: Button, Dialog, Modal, Table, Input.
-Rules: No business logic, No API calls, No feature-specific code.
-
-## components/shared
-Reusable cross-feature components (e.g., PageHeader, EmptyState).
-
-## features/
-Feature-scoped architecture. Each feature owns: components, hooks, actions, validation, state, tests, types.
+Refer to these master guides under `../docs/` for granular frontend architectures:
+* **System Design**: [docs/architecture.md](../docs/architecture.md)
+* **Next.js Folder Layout**: [docs/frontend-architecture.md](../docs/frontend-architecture.md)
+* **React Components & styling**: [docs/frontend-components.md](../docs/frontend-components.md)
+* **State & Caching Hierarchies**: [docs/frontend-state.md](../docs/frontend-state.md)
+* **API contracts & SSE structures**: [docs/api.md](../docs/api.md)
+* **Bun CLI & quality checks**: [docs/workflows.md](../docs/workflows.md)
 
 ---
 
-# Component Rules
+## 🔨 4. CLI Execution Reference
 
-## Keep Components Small
-If a file exceeds ~250 lines:
-* Split logic
-* Extract hooks
-* Extract child components
-
-## Reusability Rule
-If logic/UI is reused 2+ times: Extract it. Do not copy-paste.
-
----
-
-# Next.js Rules
-
-## Prefer Server Components
-Use Server Components by default. Only use `"use client"` when required for interactivity, browser APIs, or client state.
-
-## Data Fetching
-Fetch on server whenever possible using async Server Components or Server Actions. Avoid unnecessary client-side fetching.
-
-## Server Actions
-- Keep actions focused
-- Validate all inputs with Zod
-- Never expose raw DB logic to UI
-- Return typed responses
-
----
-
-# State Management
-Use URL state, Server state (React Query), or Local state before introducing global stores (Zustand/Context).
-
----
-
-# TypeScript Rules
-- **Never use `any`**. Use `unknown`, generics, or discriminated unions.
-- Shared types go in `types/`. Feature-specific types stay in the feature folder.
-
----
-
-# AI Agent Instructions
-When generating code:
-1. Follow existing architecture.
-2. Reuse existing components/hooks/utilities.
-3. Refactor instead of patching.
-4. Prefer server-side solutions first.
-5. Every change should reduce complexity and improve maintainability.
-
----
-
-# Related Documentation
-- [Architecture Details](./docs/ARCHITECTURE.md)
-- [Naming Conventions](./docs/NAMING-CONVENTIONS.md)
-- [Data Flow & API](./docs/DATA-FLOW.md)
-- [State Management](./docs/STATE-MANAGEMENT.md)
-- [Component Guidelines](./docs/COMPONENT-GUIDELINES.md)
+* Sync Packages: `bun install`
+* Start Dev Server: `bun run dev`
+* TypeScript compiler checks: `bun run typecheck`
+* Run Lints & Audits: `bun run lint`
+* Verify entire pipeline: `bun run check`
+* Production Bundle: `bun run build`

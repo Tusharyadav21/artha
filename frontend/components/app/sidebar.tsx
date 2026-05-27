@@ -17,7 +17,11 @@ import { Button } from "@/components/ui/button"
 import { CreateProjectDialog } from "@/components/app/create-project-dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/app/ui-tooltip"
+import { Avatar, AvatarFallback } from "@/components/app/ui-avatar"
 import { cn } from "@/lib/utils"
+import { motion, AnimatePresence } from "framer-motion"
+import { stagger, fadeIn, fadeUp } from "@/lib/motion"
 
 const NAV_ITEMS = [
   {
@@ -31,12 +35,6 @@ const NAV_ITEMS = [
     label: "Video Creator",
     description: "Create Videos",
     icon: VideoIcon,
-  },
-  {
-    href: "/library",
-    label: "Library",
-    description: "Documents and project prompt",
-    icon: LibraryIcon,
   },
   {
     href: "/settings",
@@ -72,7 +70,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "flex h-full flex-col bg-sidebar/85 backdrop-blur",
+        "flex h-full flex-col bg-sidebar/85 backdrop-blur transition-[width] duration-200 ease-in-out border-r border-sidebar-border",
         mobile ? "w-full" : isCollapsed ? "w-20" : "w-80"
       )}
     >
@@ -80,11 +78,11 @@ export function Sidebar({
         <div className="flex size-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
           <BotIcon data-icon="inline-start" />
         </div>
-        {!isCollapsed ? (
+        {!isCollapsed || mobile ? (
           <div className="min-w-0 flex-1">
             <p className="font-medium">Agentic RAG</p>
             <p className="truncate text-xs text-muted-foreground">
-              Route-based workspace
+              Premium AI Workspace
             </p>
           </div>
         ) : null}
@@ -113,9 +111,9 @@ export function Sidebar({
         <CreateProjectDialog
           trigger={
             <Button
-              variant="outline"
+              variant="ghost"
               className={cn(
-                "w-full justify-start gap-2 border-dashed",
+                "w-full justify-start gap-2 border border-dashed border-border/50 hover:border-primary/50",
                 isCollapsed && !mobile ? "px-0 justify-center" : "px-3"
               )}
             >
@@ -126,31 +124,59 @@ export function Sidebar({
         />
       </div>
 
-      <div className="flex flex-col gap-1 px-3 py-4">
+      <motion.div 
+        variants={stagger}
+        initial="hidden"
+        animate="visible"
+        className="flex flex-col gap-1 px-3 py-4"
+      >
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon
           const isActive = pathname.startsWith(item.href)
 
-          return (
+          const button = (
             <Button
-              key={item.href}
               type="button"
-              variant={isActive ? "secondary" : "ghost"}
+              variant="ghost"
               className={cn(
-                "justify-start",
-                isCollapsed && !mobile ? "px-0" : "px-3"
+                "w-full justify-start relative",
+                isCollapsed && !mobile ? "px-0 justify-center" : "px-3",
+                isActive && "bg-primary/10 text-primary"
               )}
               onClick={() => {
                 router.push(item.href)
                 onNavigate?.()
               }}
             >
-              <Icon data-icon="inline-start" />
-              {!isCollapsed ? item.label : null}
+              <Icon data-icon="inline-start" className={cn(isActive && "text-primary")} />
+              {(!isCollapsed || mobile) && <span className="flex-1">{item.label}</span>}
+              {isActive && !isCollapsed && (
+                <motion.div 
+                  layoutId="sidebar-active-indicator"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 bg-primary rounded-full"
+                />
+              )}
             </Button>
           )
+
+          return (
+            <motion.div key={item.href} variants={fadeUp}>
+              {isCollapsed && !mobile ? (
+                <Tooltip>
+                  <TooltipTrigger>
+                    {button}
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                button
+              )}
+            </motion.div>
+          )
         })}
-      </div>
+      </motion.div>
 
       <Separator />
 
@@ -163,64 +189,92 @@ export function Sidebar({
       </div>
 
       <ScrollArea className="flex-1 px-3 pb-4">
-        <div className="flex flex-col gap-2">
-          {projects.map((project) => (
-            <button
-              key={project.id}
-              type="button"
-              className={cn(
-                "rounded-xl border px-3 py-3 text-left transition",
-                project.id === activeProjectId
-                  ? "border-primary/25 bg-primary/10"
-                  : "border-transparent hover:border-border hover:bg-background/70",
-                isCollapsed && !mobile
-                  ? "flex items-center justify-center px-2"
-                  : "flex flex-col gap-1"
-              )}
-              onClick={() => {
-                void selectProject(project.id)
-                onNavigate?.()
-              }}
-            >
-              {isCollapsed && !mobile ? (
-                <span className="text-sm font-semibold">
-                  {project.name.slice(0, 1).toUpperCase()}
-                </span>
-              ) : (
-                <>
-                  <span className="font-medium">{project.name}</span>
-                  <span className="line-clamp-2 text-xs text-muted-foreground">
-                    {project.system_prompt || "Using the default agent prompt."}
+        <motion.div 
+          variants={stagger}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col gap-2"
+        >
+          {projects.map((project) => {
+            const isActive = project.id === activeProjectId
+            const btn = (
+              <button
+                type="button"
+                className={cn(
+                  "rounded-xl border px-3 py-3 text-left transition relative overflow-hidden group/project",
+                  isActive
+                    ? "border-primary/25 bg-primary/10"
+                    : "border-transparent hover:border-border hover:bg-background/70",
+                  isCollapsed && !mobile
+                    ? "flex items-center justify-center px-2 h-10"
+                    : "flex flex-col gap-1"
+                )}
+                onClick={() => {
+                  void selectProject(project.id)
+                  onNavigate?.()
+                }}
+              >
+                {isCollapsed && !mobile ? (
+                  <span className="text-sm font-semibold">
+                    {project.name.slice(0, 1).toUpperCase()}
                   </span>
-                </>
-              )}
-            </button>
-          ))}
+                ) : (
+                  <>
+                    <span className="font-medium text-sm truncate max-w-[calc(100%-1rem)]">
+                      {project.name}
+                    </span>
+                    <span className="line-clamp-1 text-xs text-muted-foreground opacity-70 group-hover/project:opacity-100 transition-opacity">
+                      {project.system_prompt || "Default assistant prompt"}
+                    </span>
+                  </>
+                )}
+              </button>
+            )
+
+            return (
+              <motion.div key={project.id} variants={fadeIn}>
+                {isCollapsed && !mobile ? (
+                  <Tooltip>
+                    <TooltipTrigger>{btn}</TooltipTrigger>
+                    <TooltipContent side="right">{project.name}</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  btn
+                )}
+              </motion.div>
+            )
+          })}
           {!projects.length ? (
-            <div className="rounded-xl border border-dashed px-3 py-4 text-sm text-muted-foreground">
-              Create your first project to start using the workspace.
+            <div className="rounded-xl border border-dashed px-3 py-4 text-xs text-muted-foreground text-center">
+              No projects yet.
             </div>
           ) : null}
-        </div>
+        </motion.div>
       </ScrollArea>
 
       <Separator />
 
-      <div className="px-4 py-4">
-        {!isCollapsed ? (
-          <>
-            <p className="truncate text-sm font-medium">
-              {user?.display_name || "Workspace owner"}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {user?.email}
-            </p>
-          </>
-        ) : (
-          <div className="flex items-center justify-center rounded-full border bg-background/60 py-2 text-xs font-medium">
-            {user?.email?.slice(0, 1).toUpperCase() || "?"}
-          </div>
-        )}
+      <div className="px-4 py-4 border-t border-border/50">
+        <div className={cn(
+          "flex items-center gap-3",
+          isCollapsed && !mobile && "justify-center"
+        )}>
+          <Avatar size={isCollapsed && !mobile ? "sm" : "default"}>
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+              {user?.email?.slice(0, 1).toUpperCase() || "?"}
+            </AvatarFallback>
+          </Avatar>
+          {!isCollapsed || mobile ? (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">
+                {user?.display_name || "Workspace owner"}
+              </p>
+              <p className="truncate text-xs text-muted-foreground opacity-70">
+                {user?.email}
+              </p>
+            </div>
+          ) : null}
+        </div>
       </div>
     </aside>
   )

@@ -122,14 +122,18 @@ If you prefer running raw Docker Compose commands:
 
 ---
 
-## 🛠️ Manual Development
+## 🛠️ Master Documentation System
 
-For detailed instructions on running individual components locally, check the sub-project readmes:
+For comprehensive guides on codebase architecture, programming standards, workflows, and frontend/backend configurations, check our dedicated documentation modules:
 
-- [📂 **Backend Documentation**](./backend/README.md)
-- [📂 **Frontend Documentation**](./frontend/README.md)
-- [🗺️ **Project Roadmap**](./ROADMAP.md)
-- [🔍 **Troubleshooting Guide**](./TROUBLESHOOTING.md)
+- [🏛️ **System Architecture**](./docs/architecture.md) — High-level designs, database models, and chat/ingestion sequence diagrams.
+- [⚛️ **Frontend Developer Guide**](./docs/frontend.md) — Next.js v16.2 App Router, Server Components split, Server Actions, and loading boundaries.
+- [🐍 **Backend Developer Guide**](./docs/backend.md) — FastAPI standards, service-repository patterns, pgvector RAG pipeline, and Remotion video synthesis.
+- [📐 **Style Guides & Standards**](./docs/standards.md) — Coding conventions, variable suffixes, state hierarchy, API contracts, testing metrics, and error boundaries.
+- [🔧 **Workflows & Runbook**](./docs/workflows.md) — Worker job queues, Alembic migrations lifecycle, CLI reference, configuration, and observability.
+- [🔍 **Troubleshooting Guide**](./docs/troubleshooting.md) — Docker link failures, local model fetching, Redis task queues, and migration debugging.
+- [🗺️ **Project Roadmap**](./docs/roadmap.md) — Phase 1, 2, and 3 engineering milestones.
+
 
 ### Prerequisites
 - Python `3.12+` with `uv`
