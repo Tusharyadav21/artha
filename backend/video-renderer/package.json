@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "remotion": "4.0.211",
-    "@remotion/cli": "4.0.211",
+    "@remotion/cli": "4.0.468",
     "@remotion/renderer": "4.0.211",
     "shiki": "^1.22.2",
     "lucide-react": "^0.454.0",
