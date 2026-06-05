@@ -11,6 +11,7 @@ from src.core.config import get_settings
 from src.domain.models import Project, UserMemory
 from src.repositories.conversations import ConversationRepository
 from src.repositories.documents import DocumentRepository
+from src.services.llm_client import BaseLLMClient, OllamaAdapter
 from src.services.ollama import OllamaClient
 from src.services.reranker import Reranker
 
@@ -96,7 +97,7 @@ def _estimate_tokens(text: str) -> int:
     return len(text) // 4
 
 
-async def _summarize_history(messages: list[dict]) -> str:
+async def _summarize_history(messages: list[dict], llm_client: BaseLLMClient) -> str:
     """Compresses long conversation history into a concise summary using the LLM."""
     history_str = _format_history(messages, capitalize_roles=True)
     prompt = (
@@ -105,13 +106,13 @@ async def _summarize_history(messages: list[dict]) -> str:
         f"{history_str}\n\nSummary:"
     )
     try:
-        return (await OllamaClient().generate(prompt)).strip()
+        return (await llm_client.generate(prompt)).strip()
     except Exception as exc:
         logger.warning(f"History summarization failed: {exc}, using recent messages fallback")
         return history_str[-500:]
 
 
-def build_rag_graph(db: AsyncSession):
+def build_rag_graph(db: AsyncSession, llm_client: BaseLLMClient):
     """Constructs the LangGraph state machine for the RAG pipeline."""
 
     async def analyze_query(state: RagState) -> RagState:
@@ -132,7 +133,7 @@ def build_rag_graph(db: AsyncSession):
         )
 
         try:
-            res = await OllamaClient().generate(
+            res = await llm_client.generate(
                 prompt,
                 model_name=state.get("model_name"),
                 num_ctx=state.get("num_ctx"),
@@ -169,7 +170,7 @@ def build_rag_graph(db: AsyncSession):
             f"Question: {state['search_query']}\n\nHypothetical answer:"
         )
         try:
-            answer = await OllamaClient().generate(
+            answer = await llm_client.generate(
                 prompt,
                 model_name=state.get("model_name"),
                 num_ctx=state.get("num_ctx"),
@@ -181,21 +182,6 @@ def build_rag_graph(db: AsyncSession):
             hyde_text = None
 
         return {**state, "hyde_text": hyde_text, "hyde_run": True}
-
-    async def graph_search(state: RagState) -> RagState:
-        """Queries the Neo4j graph for neighbors of extracted entities."""
-        entities = state.get("query_entities", [])
-        if not entities:
-            return {**state, "graph_context": None}
-        try:
-            from src.repositories.neo4j_graph import Neo4jRepository
-            repo = Neo4jRepository()
-            context = await repo.traverse_neighborhood(str(state["project_id"]), entities, depth=2)
-            await repo.close()
-            return {**state, "graph_context": context}
-        except Exception as e:
-            logger.warning(f"Graph search failed: {e}")
-            return {**state, "graph_context": None}
 
     async def retrieve(state: RagState) -> RagState:
         """Performs hybrid search on PostgreSQL using pgvector and trigrams."""
@@ -353,7 +339,6 @@ def build_rag_graph(db: AsyncSession):
     graph = StateGraph(RagState)
     
     graph.add_node("analyze_query", analyze_query)
-    graph.add_node("graph_search", graph_search)
     graph.add_node("retrieve", retrieve)
     graph.add_node("rerank", rerank)
     graph.add_node("quality_gate", quality_gate)
@@ -362,8 +347,7 @@ def build_rag_graph(db: AsyncSession):
     graph.add_node("compose_prompt", compose_prompt)
     
     graph.set_entry_point("analyze_query")
-    graph.add_edge("analyze_query", "graph_search")
-    graph.add_edge("graph_search", "retrieve")
+    graph.add_edge("analyze_query", "retrieve")
     graph.add_edge("retrieve", "rerank")
     graph.add_edge("rerank", "quality_gate")
     
@@ -394,8 +378,12 @@ async def prepare_rag_context(
     model_name: str | None = None,
     num_ctx: int | None = None,
     num_predict: int | None = None,
+    llm_client: BaseLLMClient | None = None,
 ) -> RagState:
     """Orchestrates the RAG pipeline to generate a final prompt for the LLM."""
+    if llm_client is None:
+        llm_client = OllamaAdapter()
+
     project = await db.get(Project, project_id)
     system_prompt = project.system_prompt if project else None
 
@@ -430,13 +418,13 @@ async def prepare_rag_context(
         if len(messages) > _HISTORY_SUMMARIZE_AT:
             older = messages[:-_HISTORY_KEEP_RECENT]
             recent = messages[-_HISTORY_KEEP_RECENT:]
-            summary = await _summarize_history(older)
+            summary = await _summarize_history(older, llm_client)
             history.append({"role": "system", "content": f"Summary: {summary}"})
             history.extend(recent)
         else:
             history.extend(messages)
 
-    graph = build_rag_graph(db)
+    graph = build_rag_graph(db, llm_client)
     result = await graph.ainvoke(
         {
             "project_id": project_id,
@@ -458,6 +446,6 @@ async def prepare_rag_context(
             "needs_hyde": False,
             "hyde_run": False,
         },
-        config={"configurable": {"thread_id": str(conversation_id)}},
+        config={},
     )
     return result

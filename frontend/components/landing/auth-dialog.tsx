@@ -25,11 +25,7 @@ interface AuthDialogProps {
 }
 
 // fallow-ignore-next-line complexity
-export function AuthDialog({
-  open,
-  onOpenChange,
-  initialMode = "login",
-}: AuthDialogProps) {
+export function AuthDialog({ open, onOpenChange, initialMode = "login" }: AuthDialogProps) {
   const router = useRouter()
   const [email, setEmail] = React.useState("tusharydv2910@gmail.com")
   const [displayName, setDisplayName] = React.useState("Tushar Yadav")
@@ -62,16 +58,12 @@ export function AuthDialog({
       setCookie(TOKEN_KEY, response.access_token)
       window.localStorage.removeItem(ACTIVE_PROJECT_KEY)
 
-      toast.success(
-        isRegistering ? "Account created successfully" : "Signed in successfully"
-      )
+      toast.success(isRegistering ? "Account created successfully" : "Signed in successfully")
 
       onOpenChange(false)
       router.replace(`/${response.user.default_home_tab}`)
     } catch (caught) {
-      toast.error(
-        caught instanceof Error ? caught.message : "Authentication failed"
-      )
+      toast.error(caught instanceof Error ? caught.message : "Authentication failed")
     } finally {
       setIsLoading(false)
     }
@@ -90,9 +82,7 @@ export function AuthDialog({
       setIsForgotPassword(false)
       setEmail("")
     } catch (caught) {
-      toast.error(
-        caught instanceof Error ? caught.message : "Failed to send reset link"
-      )
+      toast.error(caught instanceof Error ? caught.message : "Failed to send reset link")
     } finally {
       setIsLoading(false)
     }
@@ -103,7 +93,7 @@ export function AuthDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            {isForgotPassword ? "Reset Password" : "Agentic RAG"}
+            {isForgotPassword ? "Reset Password" : "Artha"}
           </DialogTitle>
           <DialogDescription>
             {isForgotPassword

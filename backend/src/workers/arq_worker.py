@@ -6,10 +6,8 @@ from arq.connections import RedisSettings
 from src.core.config import get_settings
 from src.core.database import AsyncSessionLocal
 from src.repositories.documents import DocumentRepository
-from src.repositories.neo4j_graph import Neo4jRepository
 from src.domain.models import DocumentStatus
 from src.services.ingestion import chunk_text_hierarchical, embed_chunks_enriched, parse_document_bytes
-from src.services.graph_extractor import extract_graph_from_text
 from src.services.ollama import OllamaClient
 import json
 
@@ -102,6 +100,10 @@ async def process_document(ctx: dict, document_id: str, embed_model: str | None 
         if document is None:
             logger.warning(f"Document {document_id} not found, skipping")
             return
+        
+        # Explicitly load the deferred source_bytes in the async session
+        await db.refresh(document, attribute_names=["source_bytes"])
+        source_bytes = document.source_bytes
 
         logger.info(
             f"Processing document {document_id}: {document.filename} "
@@ -111,7 +113,7 @@ async def process_document(ctx: dict, document_id: str, embed_model: str | None 
 
         try:
             text = parse_document_bytes(
-                document.source_bytes,
+                source_bytes,
                 document.mime_type,
                 document.filename,
             )
@@ -134,22 +136,6 @@ async def process_document(ctx: dict, document_id: str, embed_model: str | None 
             except Exception as e:
                 logger.warning(f"Document {document_id}: failed to extract metadata: {e}")
                 document.extracted_metadata = {}
-
-            # Extract Graph Data
-            try:
-                graph_data = await extract_graph_from_text(text[:3000]) # limit size to avoid LLM crash
-                if graph_data.get("entities") or graph_data.get("relations"):
-                    neo4j_repo = Neo4jRepository()
-                    await neo4j_repo.create_entities_and_relations(
-                        project_id=str(document.project_id),
-                        document_id=str(document.id),
-                        entities=graph_data.get("entities", []),
-                        relations=graph_data.get("relations", [])
-                    )
-                    await neo4j_repo.close()
-                    logger.debug(f"Document {document_id}: extracted {len(graph_data.get('entities', []))} entities")
-            except Exception as e:
-                logger.warning(f"Document {document_id}: failed to extract graph data: {e}")
 
             chunks = chunk_text_hierarchical(text, filename=document.filename)
             logger.debug(f"Document {document_id}: created {len(chunks)} chunks")

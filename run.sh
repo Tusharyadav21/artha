@@ -69,14 +69,14 @@ trap cleanup INT TERM
 
 show_banner() {
     clear
-    echo -e "${CYAN}  █████╗  ██████╗ ███████╗███╗   ██╗████████╗██╗ ██████╗    ██████╗  █████╗  ██████╗ ${NC}"
-    echo -e "${CYAN} ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝██║██╔════╝    ██╔══██╗██╔══██╗██╔════╝ ${NC}"
-    echo -e "${CYAN} ███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   ██║██║         ██████╔╝███████║██║  ███╗${NC}"
-    echo -e "${CYAN} ██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   ██║██║         ██╔══██╗██╔══██║██║   ██║${NC}"
-    echo -e "${CYAN} ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   ██║╚██████╗    ██║  ██║██║  ██║╚██████╔╝${NC}"
-    echo -e "${CYAN} ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   ╚═╝ ╚══════╝    ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ${NC}"
-    echo -e "${PURPLE}                  Autonomous Retrieval-Augmented Generation Stack${NC}"
-    echo -e "${WHITE}─────────────────────────────────────────────────────────────────────────────────${NC}"
+    echo -e "${CYAN}    █████╗ ██████╗ ████████╗██╗  ██╗ █████╗ ${NC}"
+    echo -e "${CYAN}   ██╔══██╗██╔══██╗╚══██╔══╝██║  ██║██╔══██╗${NC}"
+    echo -e "${CYAN}   ███████║██████╔╝   ██║   ███████║███████║${NC}"
+    echo -e "${CYAN}   ██╔══██║██╔══██╗   ██║   ██╔══██║██╔══██║${NC}"
+    echo -e "${CYAN}   ██║  ██║██║  ██║   ██║   ██║  ██║██║  ██║${NC}"
+    echo -e "${CYAN}   ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝${NC}"
+    echo -e "${PURPLE}        Local-first AI Workspace.         ${NC}"
+    echo -e "${WHITE}────────────────────────────────────────────────────────${NC}"
     echo ""
 }
 
@@ -85,7 +85,25 @@ load_env() {
         log_warning ".env file not found. Creating from .env.example..."
         cp .env.example .env
     fi
-    # Sync environment configuration to subdirectories for native host loading
+
+    # Export all vars from .env into the current shell so Alembic and workers can read them
+    set -a
+    # shellcheck source=.env
+    source .env
+    set +a
+
+    # Construct DATABASE_URL and REDIS_URL from component vars if not explicitly set.
+    # Uses host-exposed ports from compose.dev.yaml (5435 for postgres, 6379 for redis).
+    if [ -z "$DATABASE_URL" ]; then
+        export DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-ragapp}:${POSTGRES_PASSWORD:-ragapp}@localhost:5435/${POSTGRES_DB:-ragapp}"
+    fi
+    if [ -z "$REDIS_URL" ]; then
+        export REDIS_URL="redis://localhost:6379"
+    fi
+
+    # Sync .env to subdirectories so pydantic-settings finds it when running from those dirs.
+    # The exported DATABASE_URL and REDIS_URL above are inherited by all child processes
+    # (uv run alembic, uvicorn, arq) via the shell environment — no extra writes needed.
     cp .env backend/.env 2>/dev/null
     cp .env frontend/.env 2>/dev/null
 }
@@ -333,16 +351,17 @@ clean_system() {
 interactive_menu() {
     while true; do
         show_banner
-        echo -e "${BOLD}${WHITE}Select an action to perform:${NC}"
-        echo -e "  ${CYAN}1)${NC} 🚀 Start Hybrid Stack (Docker Infra + Local App + Unified Logs)"
-        echo -e "  ${CYAN}2)${NC} 🛠️  Start Stack with Dev Tools (RedisInsight)"
-        echo -e "  ${CYAN}3)${NC} 🛑 Stop Stack & Processes"
-        echo -e "  ${CYAN}4)${NC} ♻️  Restart Stack"
-        echo -e "  ${CYAN}5)${NC} 📊 Check Services Status"
-        echo -e "  ${CYAN}6)${NC} 📋 View Infrastructure Logs"
-        echo -e "  ${CYAN}7)${NC} ⚙️  Run Database Migrations locally"
-        echo -e "  ${CYAN}8)${NC} 🧹 Deep Clean Docker Volumes"
-        echo -e "  ${CYAN}9)${NC} 🚪 Exit"
+        echo -e "${BOLD}${WHITE}What would you like to do?${NC}"
+        echo ""
+        echo -e "  ${CYAN}1)${NC} 🚀 ${WHITE}Start Artha${NC}              Boot infra + backend + frontend with live logs"
+        echo -e "  ${CYAN}2)${NC} 🛠️  ${WHITE}Start + Dev Tools${NC}        Same as above, adds RedisInsight on :8001"
+        echo -e "  ${CYAN}3)${NC} 🛑 ${WHITE}Stop Everything${NC}          Kill all processes and containers"
+        echo -e "  ${CYAN}4)${NC} ♻️  ${WHITE}Restart${NC}                  Full stop → start cycle"
+        echo -e "  ${CYAN}5)${NC} 📊 ${WHITE}Health Check${NC}              Show status of all host & Docker services"
+        echo -e "  ${CYAN}6)${NC} 📋 ${WHITE}Stream Infra Logs${NC}         Tail PostgreSQL / Redis / Langfuse logs"
+        echo -e "  ${CYAN}7)${NC} 🗄️  ${WHITE}Run Migrations${NC}            Apply pending Alembic schema migrations"
+        echo -e "  ${CYAN}8)${NC} 🧹 ${WHITE}Wipe All Data${NC}             Stop stack and delete all Docker volumes"
+        echo -e "  ${CYAN}9)${NC} 🚪 ${WHITE}Exit${NC}"
         echo ""
         read -p "Enter your choice (1-9): " choice
         echo ""

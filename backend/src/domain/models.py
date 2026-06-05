@@ -8,6 +8,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -117,6 +118,18 @@ class ChatScopeMode(StrEnum):
     ALL_COMPLETED = "all-completed"
 
 
+class LLMProvider(StrEnum):
+    """Purpose: Identifies which LLM provider backs a user's BYOK configuration."""
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+    GROQ = "groq"
+    GEMINI = "gemini"
+    MISTRAL = "mistral"
+    TOGETHER = "together"
+    COHERE = "cohere"
+    OLLAMA = "ollama"
+
+
 # ============================================================================
 # USER
 # ============================================================================
@@ -191,6 +204,12 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     memories: Mapped[list["UserMemory"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+
+    llm_config: Mapped["UserLLMConfig | None"] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
 
 
@@ -431,6 +450,7 @@ class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     source_bytes: Mapped[bytes] = mapped_column(
         LargeBinary,
         nullable=False,
+        deferred=True,
     )
 
     file_size: Mapped[int] = mapped_column(
@@ -606,4 +626,85 @@ class GeneratedVideo(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     user: Mapped["User"] = relationship(
         back_populates="generated_videos",
+    )
+
+
+# ============================================================================
+# USER LLM CONFIG (BYOK)
+# ============================================================================
+
+
+class UserLLMConfig(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    Purpose:
+        Stores per-user LLM provider configuration for Bring-Your-Own-Key support.
+
+    Responsibilities:
+        - Persist the chosen provider and encrypted API key.
+        - Store generation parameters (temperature, max_tokens) and retry settings.
+        - One config per user; upserted on save.
+
+    Architectural constraints:
+        - api_key_encrypted must always be Fernet-encrypted before insert.
+        - One-to-one with User; deleting the user cascades to this record.
+    """
+    __tablename__ = "user_llm_configs"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    provider: Mapped[LLMProvider] = mapped_column(
+        Enum(LLMProvider, name="llm_provider_enum"),
+        nullable=False,
+    )
+
+    api_key_encrypted: Mapped[bytes] = mapped_column(
+        LargeBinary,
+        nullable=False,
+    )
+
+    model: Mapped[str | None] = mapped_column(String(120))
+
+    temperature: Mapped[float] = mapped_column(
+        Float,
+        default=0.7,
+        nullable=False,
+    )
+
+    max_tokens: Mapped[int] = mapped_column(
+        Integer,
+        default=2048,
+        nullable=False,
+    )
+
+    max_retries: Mapped[int] = mapped_column(
+        Integer,
+        default=3,
+        nullable=False,
+    )
+
+    base_delay_s: Mapped[float] = mapped_column(
+        Float,
+        default=1.0,
+        nullable=False,
+    )
+
+    timeout_s: Mapped[int] = mapped_column(
+        Integer,
+        default=60,
+        nullable=False,
+    )
+
+    extra_params: Mapped[dict] = mapped_column(
+        MutableDict.as_mutable(JSONB),
+        default=dict,
+        nullable=False,
+    )
+
+    user: Mapped["User"] = relationship(
+        back_populates="llm_config",
     )

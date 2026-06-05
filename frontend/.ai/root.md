@@ -1,6 +1,6 @@
 # AI Collaboration System
 
-This is the central entry point for all AI agents working on the Agentic RAG application.
+This is the central entry point for all AI agents working on the Artha application.
 To avoid context bloat, our engineering standards and documentation are modularized.
 
 ## Available Context

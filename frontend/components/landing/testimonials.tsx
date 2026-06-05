@@ -8,14 +8,14 @@ import { SectionHeader } from "./section-header"
 const testimonials = [
   {
     quote:
-      "Agentic RAG made it trivial to build a knowledge assistant that actually understands context. The local inference keeps our data secure.",
+      "Artha made it trivial to build a knowledge assistant that actually understands context. The local inference keeps our data secure.",
     author: "Sarah Chen",
     role: "AI Engineer, Enterprise",
     initials: "SC",
   },
   {
     quote:
-      "We replaced our entire RAG pipeline with Agentic RAG. Faster retrieval, better responses, and zero operational overhead.",
+      "We replaced our entire RAG pipeline with Artha. Faster retrieval, better responses, and zero operational overhead.",
     author: "Michael Rodriguez",
     role: "CTO, SaaS Startup",
     initials: "MR",
@@ -50,9 +50,9 @@ export function Testimonials() {
   return (
     <section className="relative px-6 py-20 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        <SectionHeader 
+        <SectionHeader
           title="Loved by developers"
-          subtitle="See what teams are building with Agentic RAG"
+          subtitle="See what teams are building with Artha"
         />
 
         <motion.div

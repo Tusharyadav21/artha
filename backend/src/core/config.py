@@ -108,6 +108,15 @@ class Settings(BaseSettings):
         description="Allowed CORS origin regex",
     )
 
+    encryption_key: str | None = Field(
+        default=None,
+        description=(
+            "Fernet key for encrypting API keys at rest. "
+            "Generate with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\". "
+            "If unset, derived from jwt_secret via HKDF-SHA256 (less secure; set this in production)."
+        ),
+    )
+
     langfuse_host: str | None = Field(
         default="http://localhost:3001",
         description="Langfuse host URL",

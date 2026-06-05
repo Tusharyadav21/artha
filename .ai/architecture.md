@@ -1,12 +1,12 @@
 # System Architecture & Technical Design
 
-This document details the high-level system design, relational database models, and critical sequence flows of **Agentic RAG**.
+This document details the high-level system design, relational database models, and critical sequence flows of **Artha**.
 
 ---
 
 ## 🏛️ 1. High-Level Architecture
 
-Agentic RAG is organized as a local-first distributed system.
+Artha is organized as a local-first distributed system.
 
 ```mermaid
 flowchart LR
@@ -89,21 +89,23 @@ flowchart LR
 ## 🗄️ 2. Database Models & Schema Entities
 
 Refer to [docs/database.md](database.md) for full SQLAlchemy schema models and relationships:
-* **User**: PBKDF2 hashed credentials, JWT session validation.
-* **Project**: Dynamic scoping container for files and chats.
-* **Document & DocumentChunk**: Hierarchical parent-child embeddings storage using 768-dimensional `nomic-embed-text` vectors in `pgvector`.
-* **Conversation & Message**: Persistent session history storage.
+
+- **User**: PBKDF2 hashed credentials, JWT session validation.
+- **Project**: Dynamic scoping container for files and chats.
+- **Document & DocumentChunk**: Hierarchical parent-child embeddings storage using 768-dimensional `nomic-embed-text` vectors in `pgvector`.
+- **Conversation & Message**: Persistent session history storage.
 
 ---
 
 ## 📡 3. REST & SSE Endpoint Routes
 
 Refer to [docs/api.md](api.md) for detailed descriptions of all FastAPI APIRouter endpoints:
-* **/api/auth**: Registration, secure authentication, and profile settings.
-* **/api/projects**: Dynamic workspaces scoping per authenticated user session.
-* **/api/projects/{id}/documents**: Multi-format async file uploads and processing updates.
-* **/api/projects/{id}/chat**: Real-time SSE streaming RAG responses.
-* **/api/video**: Remotion-based short-form video generation timeline.
+
+- **/api/auth**: Registration, secure authentication, and profile settings.
+- **/api/projects**: Dynamic workspaces scoping per authenticated user session.
+- **/api/projects/{id}/documents**: Multi-format async file uploads and processing updates.
+- **/api/projects/{id}/chat**: Real-time SSE streaming RAG responses.
+- **/api/video**: Remotion-based short-form video generation timeline.
 
 ---
 

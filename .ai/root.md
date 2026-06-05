@@ -1,6 +1,6 @@
 # Root AI Portal
 
-This folder contains the master rules and architecture documents for the Agentic RAG system.
+This folder contains the master rules and architecture documents for the Artha system.
 Modern agents should start here.
 
 - `architecture.md`: System-wide architecture diagram and concepts.

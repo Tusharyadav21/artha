@@ -1,7 +1,7 @@
 [project]
 name = "agentic-rag-backend"
 version = "0.1.0"
-description = "Agentic RAG backend (FastAPI + LangGraph + Ollama)"
+description = "Artha backend (FastAPI + LangGraph + Ollama)"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.115",
@@ -29,17 +29,14 @@ dependencies = [
     "pypdf>=6.10.2",
     "langgraph-checkpoint-postgres>=3.0.5",
     "slowapi>=0.1.9",
-    "moviepy>=2.2.1",
-    "playwright>=1.59.0",
-    "soundfile>=0.13.1",
     "numpy>=2.4.4",
-    "kokoro-onnx>=0.5.0",
     "pillow>=11.3.0",
-    "neo4j>=6.2.0",
     "pytesseract>=0.3.13",
     "python-pptx>=1.0.2",
     "openpyxl>=3.1.5",
     "beautifulsoup4>=4.14.3",
+    "tenacity>=8.5",
+    "cryptography>=42.0",
 ]
 
 [dependency-groups]

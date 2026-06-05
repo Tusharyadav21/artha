@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { DownloadIcon, FileTextIcon, LibraryIcon, MessageSquarePlusIcon, VideoIcon } from "lucide-react"
+import { DownloadIcon, FileTextIcon, LibraryIcon, MessageSquarePlusIcon } from "lucide-react"
 
 import { type Project, type OllamaSettings } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -91,14 +91,6 @@ export function Navbar({
             Export Chat
           </Button>
         )}
-
-        <Button
-          variant="outline"
-          onClick={() => window.location.href = "/video"}
-        >
-          <VideoIcon className="h-4 w-4 mr-2" />
-          Video Creator
-        </Button>
 
         <Button
           variant="outline"

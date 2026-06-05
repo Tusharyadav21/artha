@@ -4,7 +4,6 @@ import * as React from "react"
 import {
   BotIcon,
   PlusIcon,
-  VideoIcon,
   SettingsIcon,
   LogOutIcon,
   SearchIcon,
@@ -79,25 +78,9 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
     >
       <div className="flex items-center gap-3 px-4 py-3 shrink-0 justify-between">
         {(!isCollapsed || mobile) && (
-          <div className="relative group">
-            <select
-              className="appearance-none bg-transparent text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground cursor-pointer outline-none border-none pr-5 transition-colors"
-              onChange={(e) => {
-                if (e.target.value === "shorts") {
-                  router.push("/video")
-                } else {
-                  router.push("/")
-                }
-              }}
-              defaultValue={pathname?.includes("video") ? "shorts" : "chat"}
-            >
-              <option value="chat" className="bg-sidebar text-foreground font-medium normal-case">Agentic Chat</option>
-              <option value="shorts" className="bg-sidebar text-foreground font-medium normal-case">Shorts Creator</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-muted-foreground/60 group-hover:text-foreground transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-            </div>
-          </div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground select-none">
+            Artha
+          </span>
         )}
         {!mobile && (
           <Button

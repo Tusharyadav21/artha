@@ -58,34 +58,19 @@ services:
       SALT: ${LANGFUSE_SALT:-change-me}
       TELEMETRY_ENABLED: "false"
       HOSTNAME: "0.0.0.0"
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
     ports:
       - "3001:3000"
     networks:
       - internal
       - public
 
-  neo4j:
-    image: neo4j:5-community
-    environment:
-      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-password}
-    volumes:
-      - neo4j-data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - internal
-      - public
-
-
 
 volumes:
   postgres-data:
   redis-data:
   langfuse-db-data:
-  neo4j-data:
 
 networks:
   internal:
