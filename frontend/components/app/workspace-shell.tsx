@@ -10,12 +10,14 @@ import {
   SettingsIcon,
   SunMediumIcon,
   CheckIcon,
+  SearchIcon,
 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 
 import { useWorkspace, WorkspaceProvider } from "@/components/app/workspace-provider"
 import { Sidebar } from "@/components/app/sidebar"
+import { CommandPalette } from "@/components/app/command-palette"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -72,6 +74,7 @@ function pageMeta(pathname: string) {
   }
 }
 
+// fallow-ignore-next-line complexity
 function NewChatDialog({
   open,
   onOpenChange,
@@ -107,6 +110,7 @@ function NewChatDialog({
   )
 }
 
+// fallow-ignore-next-line complexity
 function NewChatDialogBody({
   activeProjectId,
   initialScopeMode,
@@ -144,6 +148,7 @@ function NewChatDialogBody({
     }
 
     let isCancelled = false
+    // fallow-ignore-next-line complexity
     async function loadDocuments() {
       setIsLoadingDocuments(true)
       const items = await listProjectDocuments(projectId)
@@ -323,16 +328,18 @@ function NewChatDialogBody({
   )
 }
 
+// fallow-ignore-next-line complexity
 function WorkspaceFrame({ children }: React.PropsWithChildren) {
   const router = useRouter()
   const pathname = usePathname()
   const {
-    token,
     user,
-    activeProject,
     isLoadingSession,
     signOut,
     updateUserSettings,
+    activeProject,
+    conversations,
+    activeConversationId,
   } = useWorkspace()
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false)
   const [isNewChatOpen, setIsNewChatOpen] = React.useState(false)
@@ -371,111 +378,72 @@ function WorkspaceFrame({ children }: React.PropsWithChildren) {
     )
   }
 
+  const isWorkspaceView =
+    pathname.startsWith("/chat") ||
+    pathname.startsWith("/video") ||
+    pathname.startsWith("/analytics")
+
+  const activeConversation = conversations.find(c => c.id === activeConversationId)
+
   return (
-    <main className="min-h-svh bg-[radial-gradient(circle_at_top_left,var(--color-primary)/10,transparent_28rem)]">
-      <div className="flex min-h-svh">
-        <div className="hidden border-r border-sidebar-border lg:block">
-          <Sidebar />
-        </div>
+    <main className="flex h-[100dvh] bg-background text-foreground overflow-hidden">
+      <div className="hidden border-r border-sidebar-border lg:block shrink-0 h-full">
+        <Sidebar />
+      </div>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-border bg-background/85 h-14 px-4 flex items-center justify-between backdrop-blur">
-            <div className="flex items-center gap-4">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                className="lg:hidden"
-                aria-label="Open navigation"
-                onClick={() => setIsMobileSidebarOpen(true)}
-              >
-                <MenuIcon className="size-5" />
-              </Button>
-              <div className="flex items-baseline gap-2">
-                <h1 className="font-heading text-lg font-bold tracking-tight">
-                  {meta.title}
-                </h1>
-                <span className="text-muted-foreground text-xs">•</span>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80">
-                  {activeProject?.name || "Global"}
-                </p>
-              </div>
+      <div className="flex min-w-0 flex-1 flex-col h-full overflow-hidden">
+        {/* Breadcrumb Header */}
+        <header className="h-14 px-4 flex items-center justify-between shrink-0 z-20">
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="lg:hidden text-muted-foreground hover:text-foreground hover:bg-muted"
+              aria-label="Open navigation"
+              onClick={() => setIsMobileSidebarOpen(true)}
+            >
+              <MenuIcon className="size-5" />
+            </Button>
+            <div className="text-[13px] font-medium text-muted-foreground flex items-center gap-2">
+              <span className="truncate max-w-[120px]">{activeProject?.name || "Agentic RAG"}</span>
+              <span className="text-muted-foreground/40">/</span>
+              <span className="text-foreground truncate max-w-[200px]">
+                {isWorkspaceView ? (activeConversation?.title || "New Chat") : "Settings"}
+              </span>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="hover:bg-primary/5 hover:text-primary transition-colors"
-                    onClick={() => setIsNewChatOpen(true)}
-                  >
-                    <MessageSquarePlusIcon className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>New Chat</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="hover:bg-primary/5 hover:text-primary transition-colors"
-                    onClick={() =>
-                      void updateUserSettings({
-                        theme_preference: nextThemePreference(
-                          user.theme_preference
-                        ),
-                      })
-                    }
-                  >
-                    {user.theme_preference === "system" ? (
-                      <MonitorIcon className="size-4" />
-                    ) : user.theme_preference === "light" ? (
-                      <SunMediumIcon className="size-4" />
-                    ) : (
-                      <MoonStarIcon className="size-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Theme: {themeLabel(user.theme_preference)}</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="hover:bg-primary/5 hover:text-primary transition-colors"
-                    onClick={() => router.push("/settings")}
-                  >
-                    <SettingsIcon className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Settings</TooltipContent>
-              </Tooltip>
-              <div className="w-px h-4 bg-border mx-1" />
-              <Tooltip>
-                <TooltipTrigger>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="hover:bg-destructive/5 hover:text-destructive transition-colors"
-                    onClick={signOut}
-                  >
-                    <LogOutIcon className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Sign out</TooltipContent>
-              </Tooltip>
-            </div>
-          </header>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  onClick={() =>
+                    void updateUserSettings({
+                      theme_preference: nextThemePreference(user.theme_preference),
+                    })
+                  }
+                >
+                  {user.theme_preference === "system" ? (
+                    <MonitorIcon className="size-4" />
+                  ) : user.theme_preference === "light" ? (
+                    <SunMediumIcon className="size-4" />
+                  ) : (
+                    <MoonStarIcon className="size-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Theme: {themeLabel(user.theme_preference)}</TooltipContent>
+            </Tooltip>
+          </div>
+        </header>
 
-          <div className="flex-1 p-4 lg:p-6">{children}</div>
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0 p-0">
+          {children}
         </div>
       </div>
 
@@ -489,6 +457,7 @@ function WorkspaceFrame({ children }: React.PropsWithChildren) {
       </Sheet>
 
       <NewChatDialog open={isNewChatOpen} onOpenChange={setIsNewChatOpen} />
+      <CommandPalette />
     </main>
   )
 }

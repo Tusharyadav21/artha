@@ -1,22 +1,38 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextPlugin from "@next/eslint-plugin-next";
+import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
 
-const eslintConfig = defineConfig([
+/** @type {import('eslint').Linter.Config[]} */
+const eslintConfig = [
+  ...nextCoreWebVitals,
   {
-    plugins: {
-      "@next/next": nextPlugin,
-    },
     rules: {
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs["core-web-vitals"].rules,
+      // ── TypeScript Strict ──────────────────────────────────────
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/no-explicit-any': 'warn',
+
+      // ── React / Next.js ────────────────────────────────────────
+      'react/no-unescaped-entities': 'off',
+
+      // ── General quality ────────────────────────────────────────
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'prefer-const': 'error',
+      'no-var': 'error',
+      eqeqeq: ['error', 'always'],
+      curly: ['error', 'multi-line'],
     },
   },
-  globalIgnores([
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
-]);
+  {
+    ignores: [
+      '.next/',
+      'node_modules/',
+      'public/',
+      'components/ui/',
+      '*.config.mjs',
+      '*.config.ts',
+    ],
+  },
+];
 
 export default eslintConfig;

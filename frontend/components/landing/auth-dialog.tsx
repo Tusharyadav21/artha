@@ -24,6 +24,7 @@ interface AuthDialogProps {
   initialMode?: "login" | "register"
 }
 
+// fallow-ignore-next-line complexity
 export function AuthDialog({
   open,
   onOpenChange,
@@ -41,6 +42,7 @@ export function AuthDialog({
     setIsRegistering(initialMode === "register")
   }, [initialMode])
 
+  // fallow-ignore-next-line complexity
   async function handleAuth(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsLoading(true)

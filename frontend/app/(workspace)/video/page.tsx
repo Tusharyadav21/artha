@@ -1,5 +1,5 @@
 import { VideoCreator } from "@/components/video/Creator"
-import { Navbar } from "@/components/navbar"
+import { Navbar } from "@/components/shared/navbar"
 
 export default function VideoPage() {
   return (

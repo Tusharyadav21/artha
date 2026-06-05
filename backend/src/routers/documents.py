@@ -22,22 +22,40 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB limit
 SUPPORTED_MIME_TYPES = {
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/msword",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.ms-excel",
     "text/plain",
     "text/markdown",
     "text/csv",
+    "text/html",
     "application/json",
     "application/x-ndjson",
-    "application/msword",
+    "image/jpeg",
+    "image/png",
+    "image/tiff",
 }
 
 SUPPORTED_EXTENSIONS = {
     ".pdf",
     ".docx",
     ".doc",
+    ".pptx",
+    ".ppt",
+    ".xlsx",
+    ".xls",
     ".txt",
     ".md",
     ".csv",
     ".json",
+    ".html",
+    ".htm",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".tiff",
 }
 
 

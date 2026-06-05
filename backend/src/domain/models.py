@@ -188,6 +188,43 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
     )
 
+    memories: Mapped[list["UserMemory"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+
+# ============================================================================
+# USER MEMORY
+# ============================================================================
+
+
+class UserMemory(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    Purpose:
+        Stores long-term facts, preferences, and corrections for a user.
+
+    Responsibilities:
+        - Provide personalized context for future RAG queries.
+    """
+    __tablename__ = "user_memories"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    content: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    user: Mapped["User"] = relationship(
+        back_populates="memories",
+    )
+
+
 
 # ============================================================================
 # PROJECT
@@ -414,6 +451,11 @@ class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     error_message: Mapped[str | None] = mapped_column(Text)
+
+    extracted_metadata: Mapped[dict | None] = mapped_column(
+        "extracted_metadata",
+        MutableDict.as_mutable(JSONB),
+    )
 
     processed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),

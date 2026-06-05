@@ -6,8 +6,12 @@ from arq.connections import RedisSettings
 from src.core.config import get_settings
 from src.core.database import AsyncSessionLocal
 from src.repositories.documents import DocumentRepository
+from src.repositories.neo4j_graph import Neo4jRepository
 from src.domain.models import DocumentStatus
-from src.services.ingestion import chunk_text_hierarchical, embed_chunks, parse_document_bytes
+from src.services.ingestion import chunk_text_hierarchical, embed_chunks_enriched, parse_document_bytes
+from src.services.graph_extractor import extract_graph_from_text
+from src.services.ollama import OllamaClient
+import json
 
 logger = getLogger(__name__)
 
@@ -112,9 +116,44 @@ async def process_document(ctx: dict, document_id: str, embed_model: str | None 
                 document.filename,
             )
             logger.debug(f"Document {document_id}: parsed, {len(text)} chars")
-            chunks = chunk_text_hierarchical(text)
+
+            # Extract Metadata
+            try:
+                ollama = OllamaClient()
+                metadata_prompt = (
+                    "Extract the following metadata from the text below: "
+                    "title, author, summary, and keywords. "
+                    "Return ONLY a valid JSON object with these keys. If a value is unknown, use null.\n\n"
+                    f"Text (first 2000 chars):\n{text[:2000]}"
+                )
+                metadata_json_str = await ollama.generate(metadata_prompt, format="json")
+                if metadata_json_str:
+                    metadata = json.loads(metadata_json_str)
+                    document.extracted_metadata = metadata
+                    logger.debug(f"Document {document_id}: extracted metadata: {metadata}")
+            except Exception as e:
+                logger.warning(f"Document {document_id}: failed to extract metadata: {e}")
+                document.extracted_metadata = {}
+
+            # Extract Graph Data
+            try:
+                graph_data = await extract_graph_from_text(text[:3000]) # limit size to avoid LLM crash
+                if graph_data.get("entities") or graph_data.get("relations"):
+                    neo4j_repo = Neo4jRepository()
+                    await neo4j_repo.create_entities_and_relations(
+                        project_id=str(document.project_id),
+                        document_id=str(document.id),
+                        entities=graph_data.get("entities", []),
+                        relations=graph_data.get("relations", [])
+                    )
+                    await neo4j_repo.close()
+                    logger.debug(f"Document {document_id}: extracted {len(graph_data.get('entities', []))} entities")
+            except Exception as e:
+                logger.warning(f"Document {document_id}: failed to extract graph data: {e}")
+
+            chunks = chunk_text_hierarchical(text, filename=document.filename)
             logger.debug(f"Document {document_id}: created {len(chunks)} chunks")
-            embedded_chunks = await embed_chunks(chunks, embed_model=embed_model)
+            embedded_chunks = await embed_chunks_enriched(chunks, embed_model=embed_model)
             logger.debug(f"Document {document_id}: embedded {len(embedded_chunks)} chunks")
             await repository.replace_chunks(document, embedded_chunks)
             await repository.set_status(document, DocumentStatus.COMPLETED, processed=True)

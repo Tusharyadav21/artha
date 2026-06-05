@@ -3,6 +3,7 @@
 import * as React from "react"
 import { motion } from "framer-motion"
 import { Quote } from "lucide-react"
+import { SectionHeader } from "./section-header"
 
 const testimonials = [
   {
@@ -49,26 +50,10 @@ export function Testimonials() {
   return (
     <section className="relative px-6 py-20 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-3xl font-bold tracking-tight sm:text-4xl"
-          >
-            Loved by developers
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="mt-4 text-lg text-muted-foreground"
-          >
-            See what teams are building with Agentic RAG
-          </motion.p>
-        </div>
+        <SectionHeader 
+          title="Loved by developers"
+          subtitle="See what teams are building with Agentic RAG"
+        />
 
         <motion.div
           variants={containerVariants}

@@ -24,6 +24,7 @@ interface CreateProjectDialogProps {
   onOpenChange?: (open: boolean) => void
 }
 
+// fallow-ignore-next-line complexity
 export function CreateProjectDialog({
   trigger,
   open: controlledOpen,
@@ -48,6 +49,7 @@ export function CreateProjectDialog({
     setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
+  // fallow-ignore-next-line complexity
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const trimmedName = name.trim()

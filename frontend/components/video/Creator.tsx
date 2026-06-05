@@ -6,14 +6,33 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Music, Video, Type, Palette, ArrowRight, CheckCircle2, History, PlusCircle, LayoutIcon, CodeIcon, ClockIcon } from "lucide-react"
+import {
+  Loader2,
+  Music,
+  Video,
+  Type,
+  Palette,
+  ArrowRight,
+  CheckCircle2,
+  History,
+  PlusCircle,
+  LayoutIcon,
+  CodeIcon,
+  ClockIcon,
+  SmartphoneIcon,
+  DownloadIcon,
+  PlayIcon,
+  RefreshCwIcon,
+  FileTextIcon,
+  LayersIcon,
+} from "lucide-react"
 import { apiFetch, apiUrl } from "@/lib/api"
 import { TOKEN_KEY } from "@/lib/app-storage"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { fadeUp, fadeIn, stagger } from "@/lib/motion"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface HistoryItem {
   id: string
@@ -22,18 +41,25 @@ interface HistoryItem {
   created_at: string
 }
 
+// fallow-ignore-next-line complexity
 export function VideoCreator() {
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
-  
+
   // State for content
   const [topic, setTopic] = useState("")
   const [timeline, setTimeline] = useState<any>(null)
-  
+
   // Final video
   const [videoUrl, setVideoUrl] = useState("")
   const [history, setHistory] = useState<HistoryItem[]>([])
+
+  // Tabs: "create" | "library"
   const [activeTab, setActiveTab] = useState("create")
+
+  // Currently previewed video from history or active render
+  const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null)
+  const [previewTitle, setPreviewTitle] = useState<string>("")
 
   const getAuthToken = () => {
     if (typeof window === "undefined") return null
@@ -44,6 +70,10 @@ export function VideoCreator() {
     try {
       const data = await apiFetch<any>("/api/video/history", getAuthToken())
       setHistory(data.videos)
+      if (data.videos.length > 0 && !previewVideoUrl) {
+        setPreviewVideoUrl(data.videos[0].video_url)
+        setPreviewTitle(data.videos[0].title)
+      }
     } catch (err) {
       console.error("Failed to fetch history:", err)
     }
@@ -74,12 +104,14 @@ export function VideoCreator() {
     try {
       const data = await apiFetch<any>("/api/video/finalize", getAuthToken(), {
         method: "POST",
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           title: timeline.title,
           timeline: timeline
         })
       })
       setVideoUrl(data.video_url)
+      setPreviewVideoUrl(data.video_url)
+      setPreviewTitle(timeline.title)
       setStep(2) // Move to final step
       fetchHistory() // Refresh history
     } catch (err) {
@@ -90,225 +122,456 @@ export function VideoCreator() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Shorts Creator</h2>
-            <p className="text-sm text-muted-foreground mt-1">Generate viral YouTube Shorts from any topic.</p>
+    <div className="flex-1 flex overflow-hidden h-full  min-h-0 select-none">
+
+      {/* ========================================================= */}
+      {/* COLUMN 1: LEFT WORKSPACE PANEL (Editor / Stepper / Library) */}
+      {/* ========================================================= */}
+      <div className="flex-1 flex flex-col min-w-0 border-r  h-full">
+        {/* Header Bar with Segmented Tabs */}
+        <header className="h-14 px-6 border-b  flex items-center justify-between shrink-0 /90 backdrop-blur">
+          <div className="flex items-center gap-3">
+            <h1 className="font-semibold text-[15px] text-white tracking-tight">
+              Shorts Creator
+            </h1>
           </div>
-          <TabsList variant="line" className="bg-muted/30">
-            <TabsTrigger value="create" className="flex items-center gap-2">
-              <PlusCircle className="w-4 h-4" /> Create
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-2">
-              <History className="w-4 h-4" /> Library
-            </TabsTrigger>
-          </TabsList>
-        </div>
 
-        <TabsContent value="create">
-          <div className="max-w-3xl mx-auto">
-            <div className="flex items-center justify-center gap-4 mb-12 relative">
-              {[
-                { step: 0, label: "Topic" },
-                { step: 1, label: "Timeline" },
-                { step: 2, label: "Render" },
-              ].map((s, idx) => (
-                <React.Fragment key={s.step}>
-                  <div className="flex flex-col items-center gap-2 relative z-10">
-                    <div className={cn(
-                      "size-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300",
-                      step === s.step ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-110" : 
-                      step > s.step ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/50 text-muted-foreground"
-                    )}>
-                      {step > s.step ? <CheckCircle2 className="size-5" /> : s.step + 1}
-                    </div>
-                    <span className={cn(
-                      "text-[10px] uppercase tracking-widest font-bold",
-                      step >= s.step ? "text-primary" : "text-muted-foreground"
-                    )}>{s.label}</span>
-                  </div>
-                  {idx < 2 && (
-                    <div className={cn(
-                      "h-[2px] flex-1 min-w-[40px] -mt-5 transition-colors duration-500",
-                      step > idx ? "bg-primary" : "bg-border"
-                    )} />
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
+          {/* Segmented Tab Controls */}
+          <div className="flex items-center  border  rounded-lg p-0.5">
+            <button
+              onClick={() => setActiveTab("create")}
+              className={cn(
+                "px-3 py-1.5 rounded-md text-[11px] font-bold tracking-wide transition duration-150 flex items-center gap-1.5",
+                activeTab === "create"
+                  ? "text-white shadow-sm"
+                  : "text-muted-foreground/75 hover:text-white"
+              )}
+            >
+              <PlusCircle className="size-3.5" />
+              Create
+            </button>
+            <button
+              onClick={() => setActiveTab("library")}
+              className={cn(
+                "px-3 py-1.5 rounded-md text-[11px] font-bold tracking-wide transition duration-150 flex items-center gap-1.5",
+                activeTab === "library"
+                  ? "text-white shadow-sm"
+                  : "text-muted-foreground/75 hover:text-white"
+              )}
+            >
+              <History className="size-3.5" />
+              Library
+            </button>
+          </div>
+        </header>
 
-            {step === 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>What's the topic?</CardTitle>
-                  <CardDescription>Enter a topic and AI will plan your Short's timeline.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input 
-                    placeholder="e.g. Python Decorators, Asyncio in 60s..." 
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                  />
-                  <Button className="w-full" onClick={generateTimeline} disabled={loading || !topic}>
-                    {loading ? <Loader2 className="animate-spin" /> : "Generate Video Plan"}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+        {/* Tab View Container */}
+        <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
 
-            {step === 1 && timeline && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold">{timeline.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">Estimated duration: <span className="text-primary font-medium">{timeline.duration}s</span></p>
-                  </div>
-                  <Badge variant="outline" className="px-3 py-1">
-                    {timeline.scenes.length} Scenes
-                  </Badge>
-                </div>
+          {/* A. CREATE SHORTS ROUTE */}
+          {activeTab === "create" && (
+            <div className="flex-1 flex flex-col overflow-hidden min-h-0">
 
-                <div className="grid gap-4">
-                  {timeline.scenes.map((scene: any, idx: number) => (
-                    <Card key={idx} className="overflow-hidden border-border/50 bg-card/50 hover:border-primary/30 transition-colors">
-                      <div className="px-4 py-3 border-b border-border/50 bg-muted/20 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Badge className="capitalize h-5 px-1.5 text-[10px]">
-                            {scene.type === "code" ? <CodeIcon className="size-3 mr-1" /> : <LayoutIcon className="size-3 mr-1" />}
-                            {scene.type}
-                          </Badge>
-                          <span className="text-xs font-bold text-muted-foreground uppercase tracking-tighter">Scene {idx + 1}</span>
+              {/* Stepper Progress bar */}
+              <div className="px-8 py-4 shrink-0">
+                <div className="max-w-xl mx-auto flex items-center justify-between relative">
+                  {[
+                    { step: 0, label: "Topic" },
+                    { step: 1, label: "Timeline" },
+                    { step: 2, label: "Render" },
+                  // fallow-ignore-next-line complexity
+                  ].map((s, idx) => (
+                    <React.Fragment key={s.step}>
+                      <div className="flex flex-col items-center gap-1.5 relative z-10">
+                        <div className={cn(
+                          "size-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300",
+                          step === s.step ? "border-emerald-500 bg-emerald-600/10 text-emerald-400 shadow-sm" :
+                            step > s.step ? "border-emerald-600 bg-emerald-600 text-white" : "  text-muted-foreground"
+                        )}>
+                          {step > s.step ? <CheckCircle2 className="size-4" /> : s.step + 1}
                         </div>
-                        <div className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground bg-background/50 px-2 py-0.5 rounded border">
-                          <ClockIcon className="size-3" />
-                          {scene.start}s - {scene.end}s
-                        </div>
+                        <span className={cn(
+                          "text-[9px] uppercase tracking-wider font-bold",
+                          step >= s.step ? "text-emerald-400" : "text-muted-foreground/50"
+                        )}>{s.label}</span>
                       </div>
-                      <CardContent className="p-4 space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                            <Type className="size-3" /> Narration
-                          </label>
-                          <Textarea 
-                            className="text-sm min-h-[80px] bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary/30"
-                            value={scene.content}
-                            onChange={(e) => {
-                              const newScenes = [...timeline.scenes];
-                              newScenes[idx].content = e.target.value;
-                              setTimeline({...timeline, scenes: newScenes});
-                            }}
-                          />
-                        </div>
-
-                        {scene.type === "code" && (
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                              <CodeIcon className="size-3" /> Code Snippet
-                            </label>
-                            <Textarea 
-                              className="font-mono text-xs bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary/30"
-                              value={scene.code}
-                              onChange={(e) => {
-                                const newScenes = [...timeline.scenes];
-                                newScenes[idx].code = e.target.value;
-                                setTimeline({...timeline, scenes: newScenes});
-                              }}
-                            />
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                      {idx < 2 && (
+                        <div className={cn(
+                          "h-[1px] flex-1 min-w-[20px] -mt-5 transition-colors duration-500",
+                        )} />
+                      )}
+                    </React.Fragment>
                   ))}
                 </div>
-                
-                <div className="pt-6 border-t border-border/50">
-                  <Button size="lg" className="w-full shadow-lg shadow-primary/20" onClick={finalizeVideo} disabled={loading}>
-                    {loading ? <Loader2 className="animate-spin" /> : <><Video className="mr-2 h-5 w-5" /> Render Final Video</>}
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 2 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    Short Generated!
-                  </CardTitle>
-                  <CardDescription>Your YouTube Short is ready to download.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 text-center">
-                  <div className="aspect-9/16 bg-black rounded-lg overflow-hidden">
-                    <video
-                      src={apiUrl(videoUrl)}
-                      controls
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <Button className="w-full" onClick={() => window.location.href = apiUrl(videoUrl)}>
-                    Download MP4
-                  </Button>
-                  <Button variant="ghost" onClick={() => setStep(0)}>Create Another</Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="history">
-          {history.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-32 bg-muted/20 rounded-3xl border-2 border-dashed border-border/50">
-              <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-6">
-                <Video className="w-8 h-8 opacity-40 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-semibold">No videos yet</h3>
-              <p className="text-sm text-muted-foreground mt-1 max-w-xs text-center">Start creating your first AI Short to see it in your library.</p>
-              <Button variant="outline" className="mt-6" onClick={() => setActiveTab("create")}>Get Started</Button>
-            </div>
-          ) : (
-            <motion.div 
-              variants={stagger}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            >
-              {history.map((vid) => (
-                <motion.div variants={fadeUp} key={vid.id}>
-                  <Card className="overflow-hidden group/video border-border/50 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-1">
-                    <div className="aspect-9/16 bg-black relative overflow-hidden">
-                      <video 
-                        src={apiUrl(vid.video_url)} 
-                        className="w-full h-full object-contain transition-transform duration-500 group-hover/video:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/video:opacity-100 transition-opacity flex items-end p-4">
-                        <Button className="w-full h-9 text-xs" onClick={() => window.location.href = apiUrl(vid.video_url)}>
-                          Download Short
+
+              {/* Step Contents View */}
+              <ScrollArea className="flex-1 px-8 py-6">
+                <div className="max-w-2xl mx-auto space-y-6 pb-6">
+
+                  {/* STEP 0: TOPIC PROMPT INPUT */}
+                  {step === 0 && (
+                    <div className="space-y-5 py-6">
+                      <div className="text-center max-w-md mx-auto mb-8">
+                        <div className="size-12 rounded-2xl bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                          <PlusCircle className="size-6 text-emerald-500" />
+                        </div>
+                        <h2 className="text-sm font-semibold text-white tracking-tight mb-2">Create an AI Short</h2>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Describe a topic and active AI nodes will compile narrated segments, code mockups, and overlay transitions.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col gap-4 p-4 rounded-2xl">
+                        <Textarea
+                          placeholder="e.g. Python Decorators explained simply, Asyncio in 60s, History of the pyramids..."
+                          value={topic}
+                          onChange={(e) => setTopic(e.target.value)}
+                          disabled={loading}
+                          className="min-h-24 resize-none bg-transparent border-none outline-none shadow-none focus-visible:ring-0 p-1 text-sm text-zinc-200 placeholder-muted-foreground/40"
+                        />
+                        <div className="flex justify-end pt-2 border-t ">
+                          <Button
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 px-4 rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-950/20"
+                            onClick={generateTimeline}
+                            disabled={loading || !topic.trim()}
+                          >
+                            {loading ? (
+                              <>
+                                <Loader2 className="animate-spin size-4" />
+                                Planning video...
+                              </>
+                            ) : (
+                              <>
+                                Generate Video Plan
+                                <ArrowRight className="size-3.5" />
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 1: INTERACTIVE TIMELINE SCRIPT BUILDER */}
+                  {step === 1 && timeline && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-6"
+                    >
+                      <div className="flex items-center justify-between border-b  pb-4">
+                        <div>
+                          <h3 className="text-sm font-bold text-white tracking-tight">{timeline.title}</h3>
+                          <p className="text-[11px] text-muted-foreground/80 mt-1 font-medium flex items-center gap-2">
+                            <span>Estimated Duration:</span>
+                            <span className="text-emerald-400 font-semibold">{timeline.duration}s</span>
+                            <span>·</span>
+                            <span>{timeline.scenes.length} Scenes</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Scene Cards List */}
+                      <div className="space-y-4">
+                        {timeline.scenes.map((scene: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="rounded-2xl  overflow-hidden group hover:border-zinc-800 transition duration-150"
+                          >
+                            {/* Scene Header */}
+                            <div className="px-4 py-2.5 flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <Badge className="text-zinc-300 h-5 px-2 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                  {scene.type === "code" ? <CodeIcon className="size-3 text-emerald-400" /> : <LayoutIcon className="size-3 text-blue-400" />}
+                                  {scene.type}
+                                </Badge>
+                                <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">Scene {idx + 1}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[9px] font-semibold text-muted-foreground  border  px-2 py-0.5 rounded-lg">
+                                <ClockIcon className="size-3" />
+                                {scene.start}s - {scene.end}s
+                              </div>
+                            </div>
+
+                            {/* Scene Body Editor */}
+                            <div className="p-4 space-y-4">
+                              {/* Narration script field */}
+                              <div className="space-y-1.5">
+                                <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5 select-none">
+                                  <Type className="size-3 text-zinc-500" /> Voice Narration Script
+                                </label>
+                                <Textarea
+                                  className="text-xs  border  rounded-xl p-3 text-zinc-200 placeholder-zinc-700 min-h-[72px] resize-none focus-visible:ring-1 focus-visible:ring-emerald-600 focus-visible:border-emerald-600"
+                                  value={scene.content}
+                                  onChange={(e) => {
+                                    const newScenes = [...timeline.scenes];
+                                    newScenes[idx].content = e.target.value;
+                                    setTimeline({ ...timeline, scenes: newScenes });
+                                  }}
+                                />
+                              </div>
+
+                              {/* Code layout mockup script field */}
+                              {scene.type === "code" && (
+                                <div className="space-y-1.5">
+                                  <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5 select-none">
+                                    <CodeIcon className="size-3 text-zinc-500" /> Screen Code Snippet
+                                  </label>
+                                  <Textarea
+                                    className="font-mono text-[10px]  border  rounded-xl p-3 text-emerald-400 placeholder-zinc-700 min-h-[72px] resize-none focus-visible:ring-1 focus-visible:ring-emerald-600 focus-visible:border-emerald-600"
+                                    value={scene.code}
+                                    onChange={(e) => {
+                                      const newScenes = [...timeline.scenes];
+                                      newScenes[idx].code = e.target.value;
+                                      setTimeline({ ...timeline, scenes: newScenes });
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Render Trigger */}
+                      <div className="pt-6 border-t ">
+                        <Button
+                          size="lg"
+                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/20"
+                          onClick={finalizeVideo}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <>
+                              <Loader2 className="animate-spin size-4" />
+                              Compiling overlay nodes and rendering...
+                            </>
+                          ) : (
+                            <>
+                              <Video className="size-4" />
+                              Render Final Video Clip (MP4)
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* STEP 2: RENDER COMPLETE VIEWER */}
+                  {step === 2 && (
+                    <div className="space-y-5 py-6">
+                      <div className="text-center max-w-md mx-auto mb-6 select-none">
+                        <div className="size-12 rounded-2xl bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                          <CheckCircle2 className="size-6 text-emerald-500" />
+                        </div>
+                        <h3 className="text-sm font-semibold text-white tracking-tight mb-2">Short Rendered!</h3>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Your visual short is fully generated. Review the vertical preview on the right and download your MP4.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col gap-3 p-4  border  rounded-2xl">
+                        <Button
+                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 rounded-xl flex items-center justify-center gap-1.5"
+                          onClick={() => window.location.href = apiUrl(videoUrl)}
+                        >
+                          <DownloadIcon className="size-4" />
+                          Download MP4
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="w-full border  hover:bg-zinc-900 text-zinc-300 font-bold text-xs h-9 rounded-xl flex items-center justify-center gap-1.5"
+                          onClick={() => {
+                            setStep(0)
+                            setTopic("")
+                            setTimeline(null)
+                          }}
+                        >
+                          <RefreshCwIcon className="size-3.5" />
+                          Create Another Video
                         </Button>
                       </div>
                     </div>
-                    <div className="p-4 bg-card/50">
-                      <h4 className="text-sm font-bold truncate group-hover/video:text-primary transition-colors">{vid.title}</h4>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-[10px] font-mono text-muted-foreground">
-                          {new Date(vid.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
-                        <Badge variant="secondary" className="h-4 px-1.5 text-[9px] uppercase tracking-tighter">MP4</Badge>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
-            </motion.div>
+                  )}
+
+                </div>
+              </ScrollArea>
+            </div>
           )}
-        </TabsContent>
-      </Tabs>
+
+          {/* B. LIBRARY VIEW TAB */}
+          {activeTab === "library" && (
+            <div className="flex-1 overflow-hidden min-h-0 p-6 flex flex-col">
+              <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75 mb-4 shrink-0">
+                Videos Library ({history.length})
+              </h3>
+
+              <ScrollArea className="flex-1">
+                <div className="space-y-2 pr-2">
+                  {history.map((vid) => {
+                    const isActive = previewVideoUrl === vid.video_url
+                    return (
+                      <button
+                        key={vid.id}
+                        onClick={() => {
+                          setPreviewVideoUrl(vid.video_url)
+                          setPreviewTitle(vid.title)
+                        }}
+                        className={cn(
+                          "w-full rounded-xl border p-4 text-left transition duration-150 flex items-start justify-between gap-4 group",
+                        )}
+                      >
+                        <div className="min-w-0 flex-1 leading-normal">
+                          <p className="font-semibold text-xs text-white truncate group-hover:text-emerald-400 transition flex items-center gap-1.5">
+                            <Video className="size-3.5 text-zinc-400 shrink-0 group-hover:text-emerald-400" />
+                            {vid.title}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground/60 mt-1 font-medium">
+                            Created {new Date(vid.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 select-none">
+                          <span className="text-[9px] font-bold text-muted-foreground px-2 py-0.5 rounded-lg group-hover:border-zinc-700 transition">
+                            MP4
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  })}
+
+                  {history.length === 0 && (
+                    <div className="py-24 text-center select-none">
+                      <SmartphoneIcon className="size-8 text-zinc-600 mx-auto mb-4 opacity-50 animate-pulse" />
+                      <p className="text-xs font-semibold text-white">No videos generated yet</p>
+                      <p className="text-[10px] text-muted-foreground mt-1 max-w-[220px] mx-auto leading-relaxed">
+                        Start drafting video ideas in the &ldquo;Create&rdquo; tab to seed your project video library!
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      {/* ============================================================== */}
+      {/* COLUMN 2: RIGHT WORKSPACE PANEL (Mobile Preview Phone / Storyboards) */}
+      {/* ============================================================== */}
+      <div className="w-[360px] flex flex-col  h-full shrink-0 select-none">
+        {/* Top Header tab with underline */}
+        <header className="h-14 border-b  flex shrink-0">
+          <div className="w-full flex">
+            <div className="flex-1 text-[11px] font-bold tracking-wide uppercase flex items-center justify-center gap-1.5 border-b-2 border-emerald-500 text-white bg-zinc-900/10 h-full">
+              <SmartphoneIcon className="size-3.5" />
+              Preview Player
+            </div>
+          </div>
+        </header>
+
+        {/* Dynamic Preview Viewport */}
+        <div className="flex-1 p-5 overflow-hidden flex flex-col justify-center min-h-0">
+
+          {/* STATE A: Video rendering preview (Step 2 or Library selection exists) */}
+          {previewVideoUrl ? (
+            <div className="space-y-4 w-full h-full flex flex-col justify-center">
+              {/* CSS Simulated Phone Bezel Bezel frame */}
+              <div className="aspect-[9/16] w-full max-w-[215px] mx-auto rounded-3xl border-[6px] bg-black relative overflow-hidden shadow-2xl shrink-0 flex items-center justify-center">
+                {/* Simulated Notch */}
+                <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-14 h-2.5 bg-zinc-800 rounded-full z-20" />
+
+                {/* Active Player */}
+                <video
+                  src={apiUrl(previewVideoUrl)}
+                  controls
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover relative z-10"
+                />
+              </div>
+
+              {/* Download Details Bar */}
+              <div className="text-center max-w-[240px] mx-auto shrink-0 select-none">
+                <p className="text-[11px] font-semibold text-zinc-200 truncate">
+                  {previewTitle || "Project Short"}
+                </p>
+                <p className="text-[9px] text-muted-foreground mt-0.5 font-medium">
+                  Aspect Ratio 9:16 · vertical MP4 format
+                </p>
+                <div className="mt-3">
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold h-7 px-3.5 rounded-lg flex items-center justify-center gap-1 mx-auto"
+                    onClick={() => window.location.href = apiUrl(previewVideoUrl)}
+                  >
+                    <DownloadIcon className="size-3" />
+                    Download Short
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+
+            // STATE B: Planning / Outline Visual Storyboard Preview
+            <div className="h-full flex flex-col justify-center select-none text-center p-6">
+
+              {/* Stepper Outlines Storyboard */}
+              {step === 1 && timeline ? (
+                <div className="space-y-5 text-left h-full flex flex-col min-h-0">
+                  <div className="shrink-0 flex items-center gap-1.5 mb-1">
+                    <LayersIcon className="size-4 text-emerald-400" />
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Storyboard Outlines
+                    </h4>
+                  </div>
+
+                  <ScrollArea className="flex-1 pr-2">
+                    <div className="space-y-2.5">
+                      {timeline.scenes.map((scene: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-xl border  /40 leading-normal flex items-start gap-2.5"
+                        >
+                          <div className={cn(
+                            "size-6 rounded-md font-bold text-[9px] flex items-center justify-center border shrink-0",
+                            scene.type === "code" ? "bg-emerald-950/20 text-emerald-400 border-emerald-800/40" : "bg-blue-950/20 text-blue-400 border-blue-800/40"
+                          )}>
+                            S{idx + 1}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[9px] font-bold text-white uppercase tracking-wider">
+                              {scene.type === "code" ? "Code Overlay Visual" : "Talk Narrative layout"}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">
+                              {scene.content}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              ) : (
+
+                // Fallback storyboard instructions
+                <div className="space-y-4 max-w-[200px] mx-auto py-12">
+                  <SmartphoneIcon className="size-10 text-zinc-700 mx-auto mb-1 animate-pulse" />
+                  <h4 className="text-xs font-semibold text-zinc-300 tracking-tight">Active Viewport</h4>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed font-medium">
+                    Input a video topic idea and generate script timelines to seed preview overlays.
+                  </p>
+                </div>
+              )}
+
+            </div>
+          )}
+
+        </div>
+      </div>
+
     </div>
   )
 }

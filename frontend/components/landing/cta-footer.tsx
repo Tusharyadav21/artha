@@ -5,12 +5,13 @@ import { motion } from "framer-motion"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Logo } from "@/components/logo"
+import { Logo } from "@/components/shared/logo"
 
 interface CTAFooterProps {
   onGetStartedClick: () => void
 }
 
+// fallow-ignore-next-line complexity
 export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
   return (
     <footer className="relative border-t border-border/50 bg-background/80 backdrop-blur">

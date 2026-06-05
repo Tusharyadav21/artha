@@ -1,175 +1,88 @@
-<div align="center">
-  <img src="docs/assets/logo.png" width="120" alt="Agentic RAG Logo" />
-  <h1>Agentic RAG</h1>
-  <p><strong>A Local-First, Autonomous Agentic Retrieval-Augmented Generation Stack</strong></p>
+# Agentic RAG
+**A Local-First, Autonomous Agentic Retrieval-Augmented Generation Stack**
 
-  [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-  [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-  [![LangGraph](https://img.shields.io/badge/LangGraph-orange?style=for-the-badge)](https://langchain-ai.github.io/langgraph/)
-  [![Ollama](https://img.shields.io/badge/Ollama-black?style=for-the-badge)](https://ollama.com/)
-  [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-  [![Bun](https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white)](https://bun.sh/)
-</div>
+## a. Quick setup instructions
 
----
-
-<p align="center">
-  <img src="docs/assets/hero.png" width="800" alt="Agentic RAG Hero" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
-</p>
-
-## 🌟 Overview
-
-**Agentic RAG** is a state-of-the-art, local-first stack designed for building production-ready RAG applications with autonomous reasoning capabilities. By combining the power of **LangGraph** for orchestration and **Ollama** for local inference, it provides a secure, private, and highly customizable environment for your data.
-
-### Why Agentic RAG?
-- **Privacy First**: Everything runs locally. No data leaves your infrastructure.
-- **Autonomous Reasoning**: Agents can self-correct, plan, and refine their search strategies.
-- **Production Ready**: Full observability with Langfuse and robust auth with Better Auth.
-- **Blazing Performance**: Powered by Bun, FastAPI, and Redis-backed background workers.
-
----
-
-## ✨ Key Features
-
-| Feature | Description |
-| :--- | :--- |
-| **🤖 Agentic Orchestration** | Powered by **LangGraph**, enabling complex multi-step reasoning, self-correction, and planning. |
-| **🏠 Local-First** | Native support for **Ollama**, allowing you to use Qwen, Llama, and Nomic Embed locally. |
-| **⚡ Async Processing** | Redis and **Arq** workers handle heavy document ingestion and vectorization in the background. |
-| **🔍 Vector Search** | Leveraging **pgvector** in PostgreSQL for high-performance semantic retrieval. |
-| **🎨 Modern UI** | A sleek, responsive dashboard built with **Next.js 14**, **Bun**, and **Shadcn UI**. |
-| **🛡️ Secure & Observable** | Integrated **Better Auth** and **Langfuse** for enterprise-grade management. |
-
----
-
-## 🏗️ Architecture
-
-```mermaid
-graph TD
-    User([User]) <--> Frontend[Next.js Frontend]
-    Frontend <--> API[FastAPI Backend]
-    API <--> DB[(PostgreSQL + pgvector)]
-    API <--> Redis{Redis / Arq}
-    Redis <--> Worker[Background Worker]
-    Worker <--> Ollama[Ollama LLMs/Embed]
-    API <--> LangGraph[LangGraph Agent]
-    LangGraph <--> Ollama
-    API <--> Auth[Better Auth]
-    API <--> Observability[Langfuse]
-```
-
----
-
-## 🚀 Quick Start (Docker)
-
-The easiest way to get up and running is using the interactive launcher script [run.sh](./run.sh). It automatically performs essential pre-checks (Docker daemon status, `.env` file presence, Ollama connectivity, and model availability), starts services, and runs database migrations.
-
-### Interactive Startup
-```bash
-./run.sh
-```
-
-Menu options:
-- **Option 1**: Start Stack (Build + Migrations + Logs)
-- **Option 2**: Start Stack with Dev Tools (RedisInsight for Redis GUI at `http://localhost:8001`)
-- **Option 3-9**: Stop, Restart, Status, Logs, Migrations, Clean, Exit
-
-Choose **Option 1** to start the stack, wait for services to be healthy, and automatically run database migrations.
-
----
-
-### Launcher CLI Reference
-You can bypass the menu by passing commands directly to the script:
-- **Start Stack**: `./run.sh up` (or `./run.sh up --build` to rebuild)
-- **Stop Stack**: `./run.sh down`
-- **Restart Stack**: `./run.sh restart`
-- **Check Status**: `./run.sh status`
-- **Tail Logs**: `./run.sh logs` (or `./run.sh logs backend` for a specific service)
-- **Migrate Database**: `./run.sh migrate`
-- **Deep Clean Stack**: `./run.sh clean` (removes containers and volumes for a fresh start)
-
----
-
-### Manual Launch (Without Script)
-If you prefer running raw Docker Compose commands:
-
-1. **Environment Setup**:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Prepare Local LLMs (Ollama)**:
-   Ensure [Ollama](https://ollama.com) is running on your host machine:
+1. **Prerequisites**: Docker & Docker Compose, Python 3.12 (`uv`), Bun 1.0+, Ollama.
+2. **Download Models**:
    ```bash
    ollama pull qwen2.5:3b
    ollama pull nomic-embed-text
    ```
-
-3. **Launch Stack**:
+3. **Start Infrastructure**: 
    ```bash
-   docker compose up --build -d
+   docker compose -f compose.dev.yaml up -d
+   ```
+4. **Backend**:
+   ```bash
+   cd backend
+   uv sync
+   uv run alembic upgrade head
+   uv run uvicorn src.main:app --reload
+   ```
+5. **Frontend**:
+   ```bash
+   cd frontend
+   bun install
+   bun run dev
    ```
 
-4. **Database Initialization**:
-   ```bash
-   docker compose exec backend alembic upgrade head
-   ```
+*Alternatively, use the interactive launcher: `./run.sh`*
 
-**Services:**
-- **Frontend**: [http://localhost:3000](http://localhost:3000)
-- **Backend API**: [http://localhost:8000](http://localhost:8000)
-- **Langfuse**: [http://localhost:3001](http://localhost:3001)
+## b. Architecture overview
 
----
+The system uses a decoupled local-first design:
+- **Frontend**: Next.js (React) connecting via REST/SSE.
+- **Backend API**: FastAPI routing requests to decoupled services and repositories.
+- **Data Tier**: PostgreSQL (pgvector) for vectors, Neo4j for GraphRAG, Redis for task queuing.
+- **Workers**: Arq tasks handle async document chunking and embedding.
+- **Agent**: LangGraph orchestrates the stateful RAG flow (routing, HyDE, hybrid search, quality gates).
 
-## 🛠️ Master Documentation System
+## c. Productionization & Scalability
 
-For comprehensive guides on codebase architecture, programming standards, workflows, and frontend/backend configurations, check our dedicated documentation modules:
+To deploy this on a hyper-scaler (e.g., AWS):
+- **Compute**: Containerize FastAPI and Arq workers; deploy on AWS ECS Fargate with autoscaling. Host the Next.js frontend on Vercel or AWS Amplify.
+- **Data**: Migrate from local containers to managed AWS RDS Aurora PostgreSQL (with read replicas for search queries) and ElastiCache for Redis.
+- **Vectors/Graph**: Keep pgvector for datasets under 10M chunks; scale to a dedicated vector DB like Pinecone/Milvus if larger. Transition Neo4j to Neo4j AuraDB.
+- **Inference**: Move off local Ollama to Groq/Together AI for fast LLM inference, and OpenAI/Cohere for embeddings.
+- **Storage**: Swap local disk ingestion for direct-to-S3 presigned uploads, streaming chunks directly via the background workers.
 
-- [🏛️ **System Architecture**](./docs/architecture.md) — High-level designs, database models, and chat/ingestion sequence diagrams.
-- [⚛️ **Frontend Developer Guide**](./docs/frontend.md) — Next.js v16.2 App Router, Server Components split, Server Actions, and loading boundaries.
-- [🐍 **Backend Developer Guide**](./docs/backend.md) — FastAPI standards, service-repository patterns, pgvector RAG pipeline, and Remotion video synthesis.
-- [📐 **Style Guides & Standards**](./docs/standards.md) — Coding conventions, variable suffixes, state hierarchy, API contracts, testing metrics, and error boundaries.
-- [🔧 **Workflows & Runbook**](./docs/workflows.md) — Worker job queues, Alembic migrations lifecycle, CLI reference, configuration, and observability.
-- [🔍 **Troubleshooting Guide**](./docs/troubleshooting.md) — Docker link failures, local model fetching, Redis task queues, and migration debugging.
-- [🗺️ **Project Roadmap**](./docs/roadmap.md) — Phase 1, 2, and 3 engineering milestones.
+## d. RAG/LLM approach & decisions
 
+- **LLM**: **Qwen 2.5 (3B)** via Ollama. Chosen for superior reasoning and strict prompt adherence locally without data leaks.
+- **Embeddings**: **nomic-embed-text**. Chosen for its large 8192 context window and high MTEB ranking.
+- **Vector DB**: **pgvector**. Eliminates sync issues by keeping relational metadata and vectors atomic in one transaction.
+- **Orchestration**: **LangGraph**. Linear chains fail on ambiguity. LangGraph provides cyclical reasoning, HyDE expansion, and self-correction.
+- **Context Management**: Employed parent-child chunking (dense 60-word child for search, 260-word parent for context injection).
+- **Guardrails**: Reranking score normalization gates bad context. If the top score falls below 0.05, the agent falls back and explicitly warns the user instead of hallucinating.
 
-### Prerequisites
-- Python `3.12+` with `uv`
-- Bun `1.0+`
-- PostgreSQL `16+` with `pgvector`
-- Redis `7+`
+## e. Key technical decisions and why
 
----
+- **Decoupled Architecture**: Separated routers, services, and repositories. This isolates Cypher/SQL queries from HTTP handlers, making testing easier and API contracts stable.
+- **Async Ingestion**: Offloaded PDF parsing and embedding to Redis/Arq workers. Synchronous processing would block the FastAPI event loop and cause timeouts on large uploads.
+- **Reciprocal Rank Fusion (RRF)**: Merged vector cosine similarity with trigram keyword search to guarantee resilience against typos and exact-code matching where pure semantic search fails.
 
-## 📂 Project Structure
+## f. Engineering standards
 
-```text
-.
-├── backend/            # FastAPI API & Arq Workers
-│   ├── alembic/        # DB Migrations
-│   ├── src/            # Core logic, agents, and API
-│   └── tests/          # Pytest suite
-├── frontend/           # Next.js Application
-│   ├── src/            # Components, Hooks, and App Router
-│   └── public/         # Static assets
-├── infra/              # Infrastructure configurations
-├── docs/               # Documentation & Assets
-├── docker-compose.yml  # Orchestration
-└── .env.example        # Template configuration
-```
+- **Followed**: 
+  - Strict async/await FastAPI dependencies (`Depends()`).
+  - Next.js Server/Client component splitting.
+  - Ruff typing and code formatting checks.
+- **Skipped**:
+  - Full E2E Integration testing. Given the overhead of mocking Neo4j/Ollama in CI within realistic time constraints, I prioritized unit tests and core service validation instead.
+  - External OAuth (used local credential hashing to keep the stack fully local and private).
 
----
+## g. How AI tools were used
 
-## 🤝 Contributing
+I used AI heavily to accelerate boilerplate and iterations:
+- Drafted SQLAlchemy models, Pydantic schemas, and Alembic migrations.
+- Diagnosed asynchronous session leaks during backend testing.
+- Generated responsive Tailwind CSS layouts and UI components.
+- Auto-generated Pytest mocks for database and Ollama endpoints.
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for more details.
+## h. What I'd do differently with more time
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details.
-
----
-
-<p align="center">Built with ❤️ by the Agentic RAG Team</p>
+1. **Reranking**: Switch to a dedicated API (like Cohere Rerank) for significantly better retrieval precision.
+2. **Deep GraphRAG**: Implement global community summaries (entity resolution) rather than just 2-hop neighborhood traversals.
+3. **Automated Evals**: Integrate Ragas or TruLens in CI to programmatically score faithfulness and context recall on every PR.
+4. **IaC**: Write Terraform modules for one-click AWS infrastructure provisioning.
