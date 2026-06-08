@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-WHITE='\033[1;37m'
-BOLD='\033[1m'
-NC='\033[0m' # No Color
+# Colors (Makes it more readable , I personnaly like it :P)
+RED=$'\033[0;31m'
+GREEN=$'\033[0;32m'
+YELLOW=$'\033[0;33m'
+BLUE=$'\033[0;34m'
+PURPLE=$'\033[0;35m'
+CYAN=$'\033[0;36m'
+WHITE=$'\033[1;37m'
+BOLD=$'\033[1m'
+NC=$'\033[0m' # No Color
 
 # Logging helpers
 log_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
@@ -24,13 +24,7 @@ COMPOSE_DEV="compose.dev.yaml"
 COMPOSE_FILES="-f $COMPOSE_BASE -f $COMPOSE_DEV"
 PROFILES=""
 
-# Check for custom flags
-for arg in "$@"; do
-    if [ "$arg" == "--dev-tools" ]; then
-        PROFILES="--profile dev"
-        log_info "Including developer tools (RedisInsight)..."
-    fi
-done
+# No custom flags currently
 
 # Signal trap for graceful exits
 cleanup() {
@@ -152,7 +146,7 @@ check_ollama() {
         log_success "Ollama host is reachable at http://localhost:11434"
         
         # Load models from env or default
-        local OLLAMA_REASONER=${OLLAMA_MODEL_REASONER:-"qwen2.5:3b"}
+        local OLLAMA_REASONER=${OLLAMA_MODEL_REASONER:-"gemma4:e4b"}
         local OLLAMA_EMBED=${OLLAMA_MODEL_EMBED:-"nomic-embed-text"}
         
         log_info "Checking pulled models..."
@@ -228,6 +222,12 @@ start_stack() {
         exit 1
     fi
     cd ..
+
+    # Proactively clean up any ghost processes from previous ungraceful exits
+    log_step "Cleaning up any leftover host processes..."
+    pkill -f "uvicorn src.main:app" 2>/dev/null
+    pkill -f "arq src.workers.arq_worker.WorkerSettings" 2>/dev/null
+    pkill -f "next dev" 2>/dev/null
 
     echo -e "\n${GREEN}${BOLD}🎉 LAUNCHING LOCAL DEVELOPMENT SERVICES...${NC}"
     echo -e "🔗 ${WHITE}Frontend Dashboard:${NC}   ${CYAN}http://localhost:3000${NC}"
@@ -354,16 +354,15 @@ interactive_menu() {
         echo -e "${BOLD}${WHITE}What would you like to do?${NC}"
         echo ""
         echo -e "  ${CYAN}1)${NC} 🚀 ${WHITE}Start Artha${NC}              Boot infra + backend + frontend with live logs"
-        echo -e "  ${CYAN}2)${NC} 🛠️  ${WHITE}Start + Dev Tools${NC}        Same as above, adds RedisInsight on :8001"
-        echo -e "  ${CYAN}3)${NC} 🛑 ${WHITE}Stop Everything${NC}          Kill all processes and containers"
-        echo -e "  ${CYAN}4)${NC} ♻️  ${WHITE}Restart${NC}                  Full stop → start cycle"
-        echo -e "  ${CYAN}5)${NC} 📊 ${WHITE}Health Check${NC}              Show status of all host & Docker services"
-        echo -e "  ${CYAN}6)${NC} 📋 ${WHITE}Stream Infra Logs${NC}         Tail PostgreSQL / Redis / Langfuse logs"
-        echo -e "  ${CYAN}7)${NC} 🗄️  ${WHITE}Run Migrations${NC}            Apply pending Alembic schema migrations"
-        echo -e "  ${CYAN}8)${NC} 🧹 ${WHITE}Wipe All Data${NC}             Stop stack and delete all Docker volumes"
-        echo -e "  ${CYAN}9)${NC} 🚪 ${WHITE}Exit${NC}"
+        echo -e "  ${CYAN}2)${NC} 🛑 ${WHITE}Stop Everything${NC}          Kill all processes and containers"
+        echo -e "  ${CYAN}3)${NC} ♻️  ${WHITE}Restart${NC}                  Full stop → start cycle"
+        echo -e "  ${CYAN}4)${NC} 📊 ${WHITE}Health Check${NC}              Show status of all host & Docker services"
+        echo -e "  ${CYAN}5)${NC} 📋 ${WHITE}Stream Infra Logs${NC}         Tail PostgreSQL / Redis / Langfuse logs"
+        echo -e "  ${CYAN}6)${NC} 🗄️  ${WHITE}Run Migrations${NC}            Apply pending Alembic schema migrations"
+        echo -e "  ${CYAN}7)${NC} 🧹 ${WHITE}Wipe All Data${NC}             Stop stack and delete all Docker volumes"
+        echo -e "  ${CYAN}8)${NC} 🚪 ${WHITE}Exit${NC}"
         echo ""
-        read -p "Enter your choice (1-9): " choice
+        read -p "Enter your choice (1-8): " choice
         echo ""
 
         case $choice in
@@ -372,31 +371,26 @@ interactive_menu() {
                 break
                 ;;
             2)
-                PROFILES="--profile dev"
-                start_stack
-                break
-                ;;
-            3)
                 stop_stack
                 break
                 ;;
-            4)
+            3)
                 restart_stack
                 break
                 ;;
-            5)
+            4)
                 view_status
                 ;;
-            6)
+            5)
                 tail_logs
                 ;;
-            7)
+            6)
                 run_migrations
                 ;;
-            8)
+            7)
                 clean_system
                 ;;
-            9)
+            8)
                 log_success "Goodbye!"
                 exit 0
                 ;;
@@ -452,7 +446,7 @@ if [ $# -gt 0 ]; then
             echo "  help            Show this help menu"
             echo ""
             echo "Options:"
-            echo "  --dev-tools     Include dev tools profile (RedisInsight)"
+            echo "  (No custom options available)"
             echo ""
             echo "If run without commands, opens the interactive menu."
             ;;

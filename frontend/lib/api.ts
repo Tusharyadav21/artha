@@ -189,8 +189,8 @@ export interface OllamaSettings {
 
 export const DEFAULT_OLLAMA_SETTINGS: OllamaSettings = {
   mode: "local",
-  localModel: "qwen2.5:3b",
-  cloudModel: "qwen3-coder-next:cloud",
+  localModel: "gemma4:e4b",
+  cloudModel: "gemma4:31b-cloud",
   embedModel: "nomic-embed-text",
   numCtx: 4096,
   numPredict: 512,

@@ -142,7 +142,7 @@ Create `.env` inside the workspace root (based on `.env.example` template):
 | `DATABASE_URL`         | PostgreSQL connection string   | `postgresql+asyncpg://postgres:pass@localhost:5432/db` |
 | `REDIS_URL`            | Redis server target            | `redis://localhost:6379/0`                             |
 | `OLLAMA_BASE_URL`      | Host ollama server endpoint    | `http://localhost:11434`                               |
-| `OLLAMA_MODEL_PLANNER` | Local LLM script planner model | `qwen2.5:3b`                                           |
+| `OLLAMA_MODEL_PLANNER` | Local LLM script planner model | `gemma4:e4b`                                           |
 | `OLLAMA_MODEL_EMBED`   | Local Vector Embedding model   | `nomic-embed-text`                                     |
 
 ---

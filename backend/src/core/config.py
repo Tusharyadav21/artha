@@ -46,11 +46,11 @@ class Settings(BaseSettings):
         description="Ollama server base URL",
     )
     ollama_model_reasoner: str = Field(
-        default="qwen2.5:7b",
+        default="gemma4:e4b",
         description="Model name for reasoning",
     )
     ollama_model_planner: str = Field(
-        default="qwen2.5:7b",
+        default="gemma4:e4b",
         description="Model name for planning",
     )
     ollama_model_embed: str = Field(
@@ -58,16 +58,16 @@ class Settings(BaseSettings):
         description="Model name for embeddings",
     )
     ollama_num_ctx: int = Field(
-        default=4096,
+        default=8192,
         description="Context window size",
-        ge=1024,
+        ge=4096,
         le=131072,
     )
     ollama_num_predict: int = Field(
-        default=2048,
+        default=4096,
         description="Maximum tokens to predict",
         ge=1,
-        le=4096,
+        le=131072,
     )
 
     reranker_model: str = Field(
@@ -75,8 +75,8 @@ class Settings(BaseSettings):
         description="Cross-encoder model used to rerank retrieved chunks",
     )
     embed_cache_ttl_seconds: int = Field(
-        default=604800,
-        description="TTL for cached query embeddings in Redis (default 7 days)",
+        default=259200,
+        description="TTL for cached query embeddings in Redis (default 3 days)",
         ge=0,
     )
     hyde_enabled: bool = Field(

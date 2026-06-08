@@ -199,8 +199,14 @@ def build_rag_graph(db: AsyncSession, llm_client: BaseLLMClient):
             document_ids=state.get("document_ids"),
         )
         sources: list[Source] = []
+        seen_parents: set[str] = set()
         for chunk, document, score in rows:
             parent_content = (chunk.metadata_ or {}).get("parent_content")
+            dedup_key = parent_content if parent_content else chunk.content
+            if dedup_key in seen_parents:
+                continue
+            seen_parents.add(dedup_key)
+
             sources.append({
                 "document_id": str(document.id),
                 "filename": document.filename,
@@ -219,13 +225,18 @@ def build_rag_graph(db: AsyncSession, llm_client: BaseLLMClient):
         query = state["search_query"]
         top_k = state.get("chunk_limit", 5)
 
-        contents = [s.get("parent_content") or s["content"] for s in state["sources"]]
+        contents = [s["content"] for s in state["sources"]]
         results = reranker.rerank(query, contents, top_k=top_k)
 
         new_sources: list[Source] = []
+        best_score = float(results[0][1]) if results else 0.0
         for index, score in results:
+            float_score = float(score)
+            # Dynamic threshold: drop chunks that score significantly lower than the best match
+            if float_score < best_score * 0.8:
+                continue
             source = dict(state["sources"][index])
-            source["score"] = float(score)
+            source["score"] = float_score
             new_sources.append(source)
 
         return {**state, "sources": new_sources}
@@ -242,13 +253,10 @@ def build_rag_graph(db: AsyncSession, llm_client: BaseLLMClient):
         if not state["sources"] or state.get("low_confidence"):
             return state
 
-        reranker = Reranker()
-        query = state["search_query"]
         compressed: list[Source] = []
         for source in state["sources"]:
             full_text = source.get("parent_content") or source["content"]
-            condensed = reranker.compress_chunk(query, full_text, max_sentences=3)
-            compressed.append({**source, "content": condensed})
+            compressed.append({**source, "content": full_text})
 
         return {**state, "sources": compressed}
 
@@ -369,6 +377,8 @@ def build_rag_graph(db: AsyncSession, llm_client: BaseLLMClient):
     return graph.compile()
 
 
+from typing import AsyncGenerator
+
 async def prepare_rag_context(
     db: AsyncSession,
     project_id: UUID,
@@ -379,7 +389,7 @@ async def prepare_rag_context(
     num_ctx: int | None = None,
     num_predict: int | None = None,
     llm_client: BaseLLMClient | None = None,
-) -> RagState:
+) -> AsyncGenerator[dict, None]:
     """Orchestrates the RAG pipeline to generate a final prompt for the LLM."""
     if llm_client is None:
         llm_client = OllamaAdapter()
@@ -425,7 +435,7 @@ async def prepare_rag_context(
             history.extend(messages)
 
     graph = build_rag_graph(db, llm_client)
-    result = await graph.ainvoke(
+    async for chunk in graph.astream(
         {
             "project_id": project_id,
             "question": question,
@@ -447,5 +457,6 @@ async def prepare_rag_context(
             "hyde_run": False,
         },
         config={},
-    )
-    return result
+        stream_mode="updates"
+    ):
+        yield chunk

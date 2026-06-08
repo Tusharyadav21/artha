@@ -15,7 +15,8 @@ To get this project running locally on your machine, you'll need Docker, Python 
 
 2. **Pull models**:
    ```bash
-   ollama pull qwen2.5:3b
+   # ollama pull qwen2.5:3b consumes around 1.8GB to 3.8GB VRAM
+   ollama pull gemma4:e4b   # <-- consumes around 2GB to 4GB VRAM
    ollama pull nomic-embed-text
    ```
 
@@ -23,7 +24,6 @@ To get this project running locally on your machine, you'll need Docker, Python 
    ```bash
    docker compose -f compose.yaml -f compose.dev.yaml up -d
    ```
-   Append `--profile dev` if you want RedisInsight alongside.
 
 4. **Backend**:
    ```bash
@@ -123,7 +123,7 @@ Moving this to AWS would look roughly like:
 
 ## d. RAG/LLM approach & decisions: Choices considered and final choice for LLM / embedding model / vector database / orchestration framework, prompt & context management, guardrails, quality, observability
 
-- **LLM — Qwen 2.5 (3B) via Ollama**: Keeps everything local and the memory footprint low. The tradeoff is synthesis quality — a bigger model will generally do better, but for local evaluation this hits the right balance.
+- **LLM — Gemma4:e4b via Ollama**: Keeps everything local and the memory footprint low. The tradeoff is synthesis quality — a bigger model will generally do better, but for local evaluation this hits the right balance.
 - **Embeddings — nomic-embed-text**: Local, easy to operate, no API dependency. Best embedding model really depends on your corpus, so treat this as a sensible starting point rather than a final answer.
 - **Vector DB — pgvector**: One less service to run. Vectors and relational metadata in the same transaction means no sync bugs between two stores.
 - **Chunking — hierarchical parent-child**: Small 80-word child chunks for precise retrieval, 320-word parent chunks for context injection. Better recall, but it adds preprocessing complexity and latency.
@@ -155,7 +155,7 @@ The goal was a solid doc-chat system, not a maximal AI platform. Some choices fa
 
 - **GraphRAG / Neo4j**: Useful for cross-document entity traversal, but probably overkill unless it demonstrably improves answers over the baseline `pgvector` pipeline. Keeping it optional for now.
 - **LangGraph**: The query rewriting and retry loops add orchestration overhead that's harder to explain and evaluate. A simpler pipeline would be easier to debug.
-- **Qwen 2.5 (3B)**: Memory and setup cost are low, but synthesis quality shows on complex questions. Worth comparing against a larger local model if hardware allows.
+- **Gemma4:e4b**: Memory and setup cost are low, but synthesis quality shows on complex questions. Worth comparing against a larger local model if hardware allows.
 - **Quality gate at 0.05**: Chosen conservatively to avoid hallucination when retrieval is weak, not because it's the right number for every dataset.
 - **Hierarchical chunking + async ingestion**: Better recall and API responsiveness, at the cost of slower ingestion and more moving parts.
 

@@ -47,6 +47,7 @@ interface WorkspaceContextValue {
   isLoadingSession: boolean
   isLoadingMessages: boolean
   isStreaming: boolean
+  executingNode: string | null
   isUploading: boolean
   isSavingProject: boolean
   isSavingSettings: boolean
@@ -66,6 +67,7 @@ interface WorkspaceContextValue {
   loadMoreConversations: () => Promise<void>
   listProjectDocuments: (projectId: string) => Promise<DocumentItem[]>
   uploadDocument: (file: File, projectId?: string) => Promise<void>
+  deleteDocument: (documentId: string) => Promise<void>
   openConversation: (conversationId: string) => Promise<void>
   prepareNewChat: (config: {
     projectId: string
@@ -146,6 +148,7 @@ export function WorkspaceProvider({
   )
   const [isLoadingMessages, setIsLoadingMessages] = React.useState(false)
   const [isStreaming, setIsStreaming] = React.useState(false)
+  const [executingNode, setExecutingNode] = React.useState<string | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
   const [isSavingProject, setIsSavingProject] = React.useState(false)
   const [isSavingSettings, setIsSavingSettings] = React.useState(false)
@@ -179,6 +182,7 @@ export function WorkspaceProvider({
     setSelectedDocumentIds([])
     setFeedbackByMessageId({})
     setPendingFeedbackId(null)
+    setExecutingNode(null)
   }, [])
 
   const clearSession = React.useCallback(() => {
@@ -360,6 +364,7 @@ export function WorkspaceProvider({
         setMessages([])
         setSources([])
         setFeedbackByMessageId({})
+        setExecutingNode(null)
       })
 
       const { documents: nextDocuments } = await refreshProjectData(projectId)
@@ -438,6 +443,26 @@ export function WorkspaceProvider({
     [activeProjectId, authedFetch]
   )
 
+  const deleteDocument = React.useCallback(
+    async (documentId: string) => {
+      if (!activeProjectId) return
+      
+      try {
+        await authedFetch(`/api/projects/${activeProjectId}/documents/${documentId}`, {
+          method: "DELETE",
+        })
+        
+        setDocuments(current => current.filter(d => d.id !== documentId))
+        setDocumentsTotal(prev => prev - 1)
+        setSelectedDocumentIds(current => current.filter(id => id !== documentId))
+        toast.success("Document deleted")
+      } catch (err) {
+        toast.error("Failed to delete document")
+      }
+    },
+    [activeProjectId, authedFetch]
+  )
+
   const openConversation = React.useCallback(
     async (conversationId: string) => {
       if (!activeProjectId) {
@@ -498,6 +523,7 @@ export function WorkspaceProvider({
 
       const userQuestion = question.trim()
       setIsStreaming(true)
+      setExecutingNode(null)
       setSources([])
       setMessages((current) => [
         ...current,
@@ -533,6 +559,9 @@ export function WorkspaceProvider({
               return next
             })
           },
+          onNode: (nodeName) => {
+            setExecutingNode(nodeName)
+          },
           onFinal: (payload) => {
             setMessages((current) => {
               const next = [...current]
@@ -555,6 +584,7 @@ export function WorkspaceProvider({
         return false
       } finally {
         setIsStreaming(false)
+        setExecutingNode(null)
       }
     },
     [
@@ -753,6 +783,7 @@ export function WorkspaceProvider({
       isLoadingSession,
       isLoadingMessages,
       isStreaming,
+      executingNode,
       isUploading,
       isSavingProject,
       isSavingSettings,
@@ -769,6 +800,7 @@ export function WorkspaceProvider({
       loadMoreConversations,
       listProjectDocuments,
       uploadDocument,
+      deleteDocument,
       openConversation,
       prepareNewChat,
       submitMessage,
@@ -797,6 +829,7 @@ export function WorkspaceProvider({
       isLoadingSession,
       isLoadingMessages,
       isStreaming,
+      executingNode,
       isUploading,
       isSavingProject,
       isSavingSettings,
@@ -813,6 +846,7 @@ export function WorkspaceProvider({
       loadMoreConversations,
       listProjectDocuments,
       uploadDocument,
+      deleteDocument,
       openConversation,
       prepareNewChat,
       submitMessage,

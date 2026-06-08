@@ -225,6 +225,21 @@ class DocumentRepository:
         await self.db.refresh(document)
         return document
 
+    async def delete(self, document: Document) -> None:
+        """
+        Purpose:
+            Permanently delete a document and its associated chunks from the database.
+
+        Responsibilities:
+            - Execute deletion.
+            - Due to CASCADE constraints, related chunks will be deleted automatically.
+
+        Inputs:
+            document (Document): The document to delete.
+        """
+        await self.db.delete(document)
+        await self.db.commit()
+
     async def set_status(
         self,
         document: Document,
