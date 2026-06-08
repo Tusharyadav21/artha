@@ -91,7 +91,19 @@ logs/
 # ---------- Graphify ----------
 # Keep GRAPH_REPORT.md, graph.json, graph.html, manifest.json, wiki/
 # Ignore local API call cache only.
-graphify-out/cache/
+graphify-out/
 
 # ---------- Claude / agent caches ----------
 .claude/
+
+# ---------- Additions from Cleanup ----------
+# Generated
+.fallow/
+**/.fallow/
+
+# Outputs
+outputs/
+*.mp4
+
+# Generated
+project-structure.txt

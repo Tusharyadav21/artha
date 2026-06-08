@@ -7,7 +7,9 @@ from src.core.config import get_settings
 from src.core.database import AsyncSessionLocal
 from src.repositories.documents import DocumentRepository
 from src.domain.models import DocumentStatus
-from src.services.ingestion import chunk_text_hierarchical, embed_chunks, parse_document_bytes
+from src.services.ingestion import chunk_text_hierarchical, embed_chunks_enriched, parse_document_bytes
+from src.services.ollama import OllamaClient
+import json
 
 logger = getLogger(__name__)
 
@@ -98,6 +100,10 @@ async def process_document(ctx: dict, document_id: str, embed_model: str | None 
         if document is None:
             logger.warning(f"Document {document_id} not found, skipping")
             return
+        
+        # Explicitly load the deferred source_bytes in the async session
+        await db.refresh(document, attribute_names=["source_bytes"])
+        source_bytes = document.source_bytes
 
         logger.info(
             f"Processing document {document_id}: {document.filename} "
@@ -107,14 +113,33 @@ async def process_document(ctx: dict, document_id: str, embed_model: str | None 
 
         try:
             text = parse_document_bytes(
-                document.source_bytes,
+                source_bytes,
                 document.mime_type,
                 document.filename,
             )
             logger.debug(f"Document {document_id}: parsed, {len(text)} chars")
-            chunks = chunk_text_hierarchical(text)
+
+            # Extract Metadata
+            try:
+                ollama = OllamaClient()
+                metadata_prompt = (
+                    "Extract the following metadata from the text below: "
+                    "title, author, summary, and keywords. "
+                    "Return ONLY a valid JSON object with these keys. If a value is unknown, use null.\n\n"
+                    f"Text (first 2000 chars):\n{text[:2000]}"
+                )
+                metadata_json_str = await ollama.generate(metadata_prompt, format="json")
+                if metadata_json_str:
+                    metadata = json.loads(metadata_json_str)
+                    document.extracted_metadata = metadata
+                    logger.debug(f"Document {document_id}: extracted metadata: {metadata}")
+            except Exception as e:
+                logger.warning(f"Document {document_id}: failed to extract metadata: {e}")
+                document.extracted_metadata = {}
+
+            chunks = chunk_text_hierarchical(text, filename=document.filename)
             logger.debug(f"Document {document_id}: created {len(chunks)} chunks")
-            embedded_chunks = await embed_chunks(chunks, embed_model=embed_model)
+            embedded_chunks = await embed_chunks_enriched(chunks, embed_model=embed_model)
             logger.debug(f"Document {document_id}: embedded {len(embedded_chunks)} chunks")
             await repository.replace_chunks(document, embedded_chunks)
             await repository.set_status(document, DocumentStatus.COMPLETED, processed=True)

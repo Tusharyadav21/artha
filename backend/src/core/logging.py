@@ -54,7 +54,7 @@ def configure_logging(level: str = "INFO") -> None:
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING) # Debloat request logs
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
-    # 3. Configure structlog for human-readable output
+    # 3. Configure structlog for human-readable output or JSON output
     processors = [
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
@@ -63,9 +63,12 @@ def configure_logging(level: str = "INFO") -> None:
         structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S", utc=False),
     ]
 
-    # Use ConsoleRenderer for terminal output (dev/local), JSON for production if needed
-    # For now, let's prioritize human readability as requested
-    processors.append(structlog.dev.ConsoleRenderer(colors=True))
+    import os
+    env = os.getenv("ENVIRONMENT", "development")
+    if env == "production":
+        processors.append(structlog.processors.JSONRenderer())
+    else:
+        processors.append(structlog.dev.ConsoleRenderer(colors=True))
 
     structlog.configure(
         processors=processors,
@@ -75,10 +78,15 @@ def configure_logging(level: str = "INFO") -> None:
         cache_logger_on_first_use=True,
     )
 
-    # Redirect standard logging to structlog if desired,
-    # but for now let's just make basicConfig clean
+    # Redirect standard logging to structlog
+    from logging.handlers import RotatingFileHandler
+    
+    os.makedirs("logs", exist_ok=True)
+    file_handler = RotatingFileHandler("logs/app.log", maxBytes=10*1024*1024, backupCount=5)
+    console_handler = logging.StreamHandler(sys.stdout)
+    
     logging.basicConfig(
         format="%(message)s",
-        stream=sys.stdout,
+        handlers=[console_handler, file_handler],
         level=log_level,
     )

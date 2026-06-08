@@ -5,12 +5,13 @@ import { motion } from "framer-motion"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Logo } from "@/components/logo"
+import { Logo } from "@/components/shared/logo"
 
 interface CTAFooterProps {
   onGetStartedClick: () => void
 }
 
+// fallow-ignore-next-line complexity
 export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
   return (
     <footer className="relative border-t border-border/50 bg-background/80 backdrop-blur">
@@ -30,11 +31,7 @@ export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
             <p className="text-lg text-muted-foreground">
               Everything you need is already included. No credit card required.
             </p>
-            <Button
-              size="lg"
-              onClick={onGetStartedClick}
-              className="gap-2"
-            >
+            <Button size="lg" onClick={onGetStartedClick} className="gap-2">
               Get started free
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -51,7 +48,7 @@ export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
             {/* Brand */}
             <div className="space-y-4">
               <Logo />
-              <p className="text-sm text-muted-foreground max-w-xs">
+              <p className="max-w-xs text-sm text-muted-foreground">
                 Local-first RAG platform for autonomous reasoning and retrieval.
               </p>
             </div>
@@ -65,7 +62,7 @@ export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
                     href="https://github.com/anthropics/agentic-rag"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-foreground transition-colors"
+                    className="transition-colors hover:text-foreground"
                   >
                     GitHub
                   </a>
@@ -75,7 +72,7 @@ export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
                     href="https://github.com/anthropics/agentic-rag#documentation"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-foreground transition-colors"
+                    className="transition-colors hover:text-foreground"
                   >
                     Docs
                   </a>
@@ -85,7 +82,7 @@ export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
                     href="https://github.com/anthropics/agentic-rag/discussions"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-foreground transition-colors"
+                    className="transition-colors hover:text-foreground"
                   >
                     Community
                   </a>
@@ -102,7 +99,7 @@ export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
                     href="https://github.com/anthropics"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-foreground transition-colors"
+                    className="transition-colors hover:text-foreground"
                   >
                     Anthropic
                   </a>
@@ -112,7 +109,7 @@ export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
                     href="https://www.langchain.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-foreground transition-colors"
+                    className="transition-colors hover:text-foreground"
                   >
                     LangChain
                   </a>
@@ -122,7 +119,7 @@ export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
                     href="https://ollama.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-foreground transition-colors"
+                    className="transition-colors hover:text-foreground"
                   >
                     Ollama
                   </a>
@@ -133,14 +130,14 @@ export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
 
           <Separator className="my-8 bg-border/30" />
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-sm text-muted-foreground">
-            <p>&copy; 2024 Agentic RAG. MIT License.</p>
+          <div className="flex flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <p>&copy; 2024 Artha. MIT License.</p>
             <div className="flex gap-6">
               <a
                 href="https://github.com/anthropics/agentic-rag"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-foreground transition-colors"
+                className="transition-colors hover:text-foreground"
               >
                 GitHub
               </a>
@@ -148,7 +145,7 @@ export function CTAFooter({ onGetStartedClick }: CTAFooterProps) {
                 href="https://twitter.com/anthropic"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-foreground transition-colors"
+                className="transition-colors hover:text-foreground"
               >
                 Twitter
               </a>

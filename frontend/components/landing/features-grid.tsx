@@ -10,6 +10,7 @@ import {
   Zap as Stream,
   Lock,
 } from "lucide-react"
+import { SectionHeader } from "./section-header"
 
 const features = [
   {
@@ -65,26 +66,10 @@ export function FeaturesGrid() {
   return (
     <section id="features" className="relative px-6 py-20 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-3xl font-bold tracking-tight sm:text-4xl"
-          >
-            Everything you need
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="mt-4 text-lg text-muted-foreground"
-          >
-            A complete stack for building production-grade RAG applications
-          </motion.p>
-        </div>
+        <SectionHeader 
+          title="Everything you need"
+          subtitle="A complete stack for building production-grade RAG applications"
+        />
 
         <motion.div
           variants={containerVariants}

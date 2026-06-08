@@ -1,10 +1,6 @@
-import { VideoCreator } from "@/components/video/Creator"
-import { Navbar } from "@/components/navbar"
+import { redirect } from "next/navigation"
 
+// Video generation is not available in this release.
 export default function VideoPage() {
-  return (
-    <main className="min-h-svh bg-background">
-      <VideoCreator />
-    </main>
-  )
+  redirect("/chat")
 }

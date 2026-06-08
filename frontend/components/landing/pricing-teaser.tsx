@@ -4,6 +4,7 @@ import * as React from "react"
 import { motion } from "framer-motion"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { SectionHeader } from "./section-header"
 
 interface PricingTeaserProps {
   onGetStartedClick: () => void
@@ -61,26 +62,10 @@ export function PricingTeaser({ onGetStartedClick }: PricingTeaserProps) {
   return (
     <section id="pricing" className="relative px-6 py-20 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-3xl font-bold tracking-tight sm:text-4xl"
-          >
-            Simple, transparent pricing
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="mt-4 text-lg text-muted-foreground"
-          >
-            Start free, scale at your own pace
-          </motion.p>
-        </div>
+        <SectionHeader 
+          title="Simple, transparent pricing"
+          subtitle="Start free, scale at your own pace"
+        />
 
         <motion.div
           variants={containerVariants}

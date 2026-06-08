@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from logging import getLogger
 from uuid import UUID
 
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import delete, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.models import Document, DocumentChunk, DocumentStatus
@@ -383,6 +383,9 @@ class DocumentRepository:
                 if mime_types := filters.get("mime_types"):
                     query = query.where(Document.mime_type.in_(list(mime_types)))
             return query
+
+        # Ensure IVFFlat scans enough lists for good recall (default probes=1 is too low)
+        await self.db.execute(text("SET LOCAL ivfflat.probes = 10"))
 
         # 1. Vector Search
         distance = DocumentChunk.embedding.cosine_distance(query_embedding).label("distance")

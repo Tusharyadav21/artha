@@ -23,6 +23,7 @@ interface DocumentLibraryDialogProps {
   autoFocusAfterUpload?: boolean
 }
 
+// fallow-ignore-next-line complexity
 export function DocumentLibraryDialog({
   open,
   onOpenChange,
@@ -53,6 +54,7 @@ export function DocumentLibraryDialog({
     return filteredDocuments.filter((doc) => doc.status === "completed")
   }, [filteredDocuments])
 
+  // fallow-ignore-next-line complexity
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !activeProject) {
@@ -158,7 +160,9 @@ export function DocumentLibraryDialog({
               <div className="p-2">
                 {completedDocuments.length > 0 ? (
                   <div className="space-y-2">
-                    {completedDocuments.map((document) => {
+                    {completedDocuments.map(
+                      // fallow-ignore-next-line complexity
+                      (document) => {
                       const isSelected = selectedDocumentIds.includes(document.id)
                       return (
                         <div

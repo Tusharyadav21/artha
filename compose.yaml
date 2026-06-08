@@ -58,6 +58,8 @@ services:
       SALT: ${LANGFUSE_SALT:-change-me}
       TELEMETRY_ENABLED: "false"
       HOSTNAME: "0.0.0.0"
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
     ports:
       - "3001:3000"
     networks:

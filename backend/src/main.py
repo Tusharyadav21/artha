@@ -10,7 +10,15 @@ from src.core.config import get_settings
 from src.core.logging import configure_logging
 from src.core.middleware import RequestTracingMiddleware
 from src.core.rate_limit import limiter
-from src.routers import auth, chat, conversations, documents, health, projects, video
+from src.routers import (
+    auth,
+    chat,
+    conversations,
+    documents,
+    health,
+    llm_config,
+    projects,
+)
 
 
 @asynccontextmanager
@@ -38,7 +46,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Agentic RAG API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Artha API", version="0.1.0", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -60,4 +68,4 @@ app.include_router(projects.router)
 app.include_router(documents.router)
 app.include_router(conversations.router)
 app.include_router(chat.router)
-app.include_router(video.router)
+app.include_router(llm_config.router)

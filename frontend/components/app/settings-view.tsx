@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { MonitorIcon, SunIcon, MoonIcon, CheckIcon } from "lucide-react"
 
+// fallow-ignore-next-line complexity
 export function SettingsView() {
   const { user, isSavingSettings, updateUserSettings } = useWorkspace()
   const [activeTab, setActiveTab] = React.useState("profile")

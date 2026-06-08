@@ -18,7 +18,7 @@ from src.repositories.messages import MessageRepository
 from src.repositories.projects import ProjectRepository
 from src.schemas.chat import ChatRequest, FeedbackRequest
 from src.services.langfuse_client import get_langfuse
-from src.services.ollama import OllamaClient
+from src.services.llm_factory import get_llm_for_user
 
 router = APIRouter(prefix="/api/projects/{project_id}/chat", tags=["chat"])
 logger = logging.getLogger(__name__)
@@ -108,7 +108,7 @@ async def chat(
         6. Handle mid-stream errors by persisting partial responses and marking traces.
     """
     target_model = payload.model
-    ollama = OllamaClient()
+    llm_client = await get_llm_for_user(current_user.id, db)
     lf = get_langfuse()
 
     try:
@@ -191,6 +191,7 @@ async def chat(
                     model_name=target_model,
                     num_ctx=payload.num_ctx,
                     num_predict=payload.num_predict,
+                    llm_client=llm_client,
                 )
                 yield _event("sources", rag_state["sources"])
 
@@ -228,7 +229,7 @@ async def chat(
                         pass
                 # ──────────────────────────────────────────────────────────────
 
-                async for token in ollama.stream_generate(
+                async for token in llm_client.stream_generate(
                     rag_state["prompt"],
                     model_name=target_model,
                     num_ctx=payload.num_ctx,
@@ -303,11 +304,11 @@ async def chat(
 
                 yield _event("error", {"detail": str(exc)})
             finally:
-                await ollama.close()
+                await llm_client.close()
 
         return StreamingResponse(stream(), media_type="text/event-stream")
     except Exception:
-        await ollama.close()
+        await llm_client.close()
         raise
 
 
