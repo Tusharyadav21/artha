@@ -27,7 +27,7 @@ The backend reads configuration from environment variables. A template is provid
 | `DATABASE_URL`         | PostgreSQL connection string | `postgresql+asyncpg://...` |
 | `REDIS_URL`            | Redis connection string      | `redis://localhost:6379/0` |
 | `OLLAMA_BASE_URL`      | URL for Ollama API           | `http://localhost:11434`   |
-| `OLLAMA_MODEL_PLANNER` | Model for planning/reasoning | `qwen2.5:3b`               |
+| `OLLAMA_MODEL_PLANNER` | Model for planning/reasoning | `gemma4:e4b`               |
 | `OLLAMA_MODEL_EMBED`   | Model for vector embeddings  | `nomic-embed-text`         |
 
 ## 📦 Local Development

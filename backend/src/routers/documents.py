@@ -280,3 +280,34 @@ async def upload_document(
         await redis.close()
 
     return document
+
+@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document(
+    project_id: UUID,
+    document_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> None:
+    """
+    Purpose:
+        Permanently deletes a document and its associated chunks from the database.
+
+    Args:
+        project_id (UUID): The target project ID.
+        document_id (UUID): The ID of the document to delete.
+        current_user: The authenticated user.
+        db: Database session.
+
+    Returns:
+        None
+
+    Raises:
+        HTTPException: 404 Not Found if project or document is not found.
+    """
+    await _ensure_project(db, project_id, current_user.id)
+    repo = DocumentRepository(db)
+    document = await repo.get_for_project(document_id, project_id)
+    if not document:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    
+    await repo.delete(document)

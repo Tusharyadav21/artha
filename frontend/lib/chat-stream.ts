@@ -39,6 +39,7 @@ export interface StreamChatConfig {
   onConversation?: (conversation: Conversation) => void
   onSources?: (sources: Source[]) => void
   onToken?: (tokenChunk: string) => void
+  onNode?: (nodeName: string) => void
   onFinal?: (payload: { message_id: string; content: string }) => void
 }
 
@@ -50,6 +51,7 @@ export async function streamChat({
   onConversation,
   onSources,
   onToken,
+  onNode,
   onFinal,
 }: StreamChatConfig): Promise<void> {
   const response = await fetch(apiUrl(`/api/projects/${projectId}/chat`), {
@@ -96,6 +98,9 @@ export async function streamChat({
       } else if (eventChunk.event === "token") {
         const tokenChunk = JSON.parse(eventChunk.data) as string
         onToken?.(tokenChunk)
+      } else if (eventChunk.event === "node") {
+        const nodeName = JSON.parse(eventChunk.data) as string
+        onNode?.(nodeName)
       } else if (eventChunk.event === "final") {
         const payload = JSON.parse(eventChunk.data) as {
           message_id: string

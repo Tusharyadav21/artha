@@ -182,7 +182,8 @@ async def chat(
                         pass
                 # ──────────────────────────────────────────────────────────────
 
-                rag_state = await prepare_rag_context(
+                rag_state = {}
+                async for chunk in prepare_rag_context(
                     db,
                     project_id,
                     conversation.id,
@@ -192,7 +193,10 @@ async def chat(
                     num_ctx=payload.num_ctx,
                     num_predict=payload.num_predict,
                     llm_client=llm_client,
-                )
+                ):
+                    node_name = list(chunk.keys())[0]
+                    yield _event("node", node_name)
+                    rag_state.update(chunk[node_name])
                 yield _event("sources", rag_state["sources"])
 
                 # ── End retrieval span ────────────────────────────────────────
