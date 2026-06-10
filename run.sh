@@ -77,13 +77,20 @@ show_banner() {
 load_env() {
     if [ ! -f .env ]; then
         log_warning ".env file not found. Creating from .env.example..."
-        cp .env.example .env
+        if [ -f .env.example ]; then
+            cp .env.example .env
+        else
+            log_warning ".env.example not found. Creating empty .env file..."
+            touch .env
+        fi
     fi
 
     # Export all vars from .env into the current shell so Alembic and workers can read them
     set -a
     # shellcheck source=.env
-    source .env
+    if [ -f .env ]; then
+        source .env 2>/dev/null || true
+    fi
     set +a
 
     # Construct DATABASE_URL and REDIS_URL from component vars if not explicitly set.
@@ -104,6 +111,16 @@ load_env() {
 
 check_tool() {
     if ! command -v "$1" >/dev/null 2>&1; then
+        if [ "$1" = "uv" ]; then
+            log_info "Tool '$1' not found. Attempting to install via Homebrew..."
+            brew install uv
+            if [ $? -eq 0 ]; then
+                log_success "Successfully installed uv via Homebrew."
+                return 0
+            else
+                log_error "Failed to install uv via Homebrew."
+            fi
+        fi
         log_error "Required tool '$1' is not installed on your host machine."
         log_info "Please install '$1' to run this service locally."
         exit 1
@@ -249,6 +266,7 @@ start_stack() {
 
     # Start Frontend Next.js Client
     cd frontend
+    bun install
     bun run dev 2>&1 | sed -u "s/^/${CYAN}[frontend] ${NC}/" &
     FRONTEND_PID=$!
     cd ..
