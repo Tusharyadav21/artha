@@ -64,6 +64,8 @@ class Settings(BaseSettings):
     vision_model: str = Field(default="gemma4:e4b")
     image_captioning_enabled: bool = Field(default=True)
 
+    media_root: str = Field(default="/tmp/artha/media")
+
     langfuse_host: str | None = Field(default="http://localhost:3001")
     langfuse_public_key: str | None = Field(default=None)
     langfuse_secret_key: str | None = Field(default=None)

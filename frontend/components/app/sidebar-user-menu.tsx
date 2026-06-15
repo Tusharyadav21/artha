@@ -12,7 +12,7 @@ import {
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 
-import { useWorkspace } from "@/components/app/workspace-provider"
+import { useAuth } from "@/hooks/use-auth"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,8 +22,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-} from "@/components/app/ui-dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/app/ui-avatar"
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 
 const themeOptions = [
@@ -37,7 +37,7 @@ const SidebarUserMenu = React.memo(function SidebarUserMenu({
 }: {
   isCollapsed: boolean
 }) {
-  const { user, signOut, updateUserSettings } = useWorkspace()
+  const { user, signOut, updateUserSettings } = useAuth()
   const { setTheme } = useTheme()
   const router = useRouter()
 

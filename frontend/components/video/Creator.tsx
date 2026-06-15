@@ -86,7 +86,7 @@ export function VideoCreator() {
   const generateTimeline = async () => {
     setLoading(true)
     try {
-      const data = await apiFetch<any>("/api/video/draft/script", getAuthToken(), {
+      const data = await apiFetch<any>("/api/video/script", getAuthToken(), {
         method: "POST",
         body: JSON.stringify({ topic })
       })
@@ -102,7 +102,7 @@ export function VideoCreator() {
   const finalizeVideo = async () => {
     setLoading(true)
     try {
-      const data = await apiFetch<any>("/api/video/finalize", getAuthToken(), {
+      const data = await apiFetch<any>("/api/video/assemble", getAuthToken(), {
         method: "POST",
         body: JSON.stringify({
           title: timeline.title,
