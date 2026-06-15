@@ -11,13 +11,16 @@ from src.core.logging import configure_logging
 from src.core.middleware import RequestTracingMiddleware
 from src.core.rate_limit import limiter
 from src.routers import (
+    analytics,
     auth,
     chat,
     conversations,
     documents,
+    extract,
     health,
     llm_config,
     projects,
+    video,
 )
 
 
@@ -68,4 +71,7 @@ app.include_router(projects.router)
 app.include_router(documents.router)
 app.include_router(conversations.router)
 app.include_router(chat.router)
+app.include_router(analytics.router)
+app.include_router(extract.router)
+app.include_router(video.router)
 app.include_router(llm_config.router)

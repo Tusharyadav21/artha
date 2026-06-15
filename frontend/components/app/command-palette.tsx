@@ -10,7 +10,8 @@ import {
   SparklesIcon,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { useWorkspace } from "./workspace-provider"
+import { useProjects } from "@/hooks/use-projects"
+import { useChat } from "@/hooks/use-chat"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -18,13 +19,8 @@ import { cn } from "@/lib/utils"
 export function CommandPalette() {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
-  const {
-    projects,
-    activeProjectId,
-    selectProject,
-    openConversation,
-    conversations,
-  } = useWorkspace()
+  const { projects, activeProjectId, selectProject } = useProjects()
+  const { openConversation, conversations } = useChat()
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {

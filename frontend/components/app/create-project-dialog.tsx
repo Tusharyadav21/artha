@@ -3,7 +3,8 @@
 import * as React from "react"
 import { FolderPlusIcon, UploadIcon, XIcon, FileIcon, Loader2Icon } from "lucide-react"
 
-import { useWorkspace } from "@/components/app/workspace-provider"
+import { useProjects } from "@/hooks/use-projects"
+import { useDocuments } from "@/hooks/use-documents"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/toast"
 import {
@@ -36,7 +37,8 @@ export function CreateProjectDialog({
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
 
-  const { createProject, uploadDocument, isCreatingProject, isUploading } = useWorkspace()
+  const { createProject, isCreatingProject } = useProjects()
+  const { uploadDocument, isUploading } = useDocuments()
   const [name, setName] = React.useState("")
   const [files, setFiles] = React.useState<File[]>([])
   const fileInputRef = React.useRef<HTMLInputElement>(null)

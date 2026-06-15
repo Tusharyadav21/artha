@@ -7,14 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-
-interface Transaction {
-  date: string
-  description: string
-  debit: number | null
-  credit: number | null
-  balance: number | null
-}
+import { parseTransactions, parseTableData, formatAmount, type Transaction } from "@/lib/financial/parser"
 
 export function FinancialView() {
   const [transactions, setTransactions] = React.useState<Transaction[]>([])
@@ -41,16 +34,39 @@ export function FinancialView() {
 
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise
       let fullText = ""
+      let allItems: Array<{ str: string; x: number; y: number; width: number; height: number }> = []
 
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i)
+        const viewport = page.getViewport({ scale: 1 })
+        const pageHeight = viewport.height
         const content = await page.getTextContent()
         const pageText = content.items.map((item: any) => item.str).join(" ")
         fullText += pageText + "\n\n"
+        allItems.push(
+          ...content.items.map((item: any) => ({
+            str: item.str,
+            x: item.transform[4],
+            y: pageHeight - item.transform[5],
+            width: item.width,
+            height: item.height || 0,
+          }))
+        )
       }
 
       setRawText(fullText)
-      const parsed = parseTransactions(fullText)
+
+      let parsed: Transaction[]
+      if (allItems.length > 0) {
+        parsed = parseTableData(allItems)
+      } else {
+        parsed = parseTransactions(fullText)
+      }
+
+      if (parsed.length === 0) {
+        parsed = parseTransactions(fullText)
+      }
+
       setTransactions(parsed)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to parse PDF.")
@@ -209,118 +225,4 @@ export function FinancialView() {
   )
 }
 
-function parseTransactions(text: string): Transaction[] {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean)
-  const results: Transaction[] = []
 
-  const datePatterns = [
-    /\b(\d{2}[/-]\d{2}[/-]\d{4})\b/,
-    /\b(\d{4}[/-]\d{2}[/-]\d{2})\b/,
-    /\b(\d{2}[/-]\d{2}[/-]\d{2})\b/,
-  ]
-
-  const amountPattern = /[+-]?\s*[₹$€]?\s*[\d,]+\.\d{2}/g
-
-  for (const line of lines) {
-    const dateMatch = matchFirst(line, datePatterns)
-    if (!dateMatch) continue
-
-    const amounts = [...line.matchAll(amountPattern)].map((m) =>
-      parseFloat(m[0].replace(/[₹$€,\s]/g, ""))
-    )
-
-    if (amounts.length === 0) continue
-
-    let description = line
-      .replace(dateMatch, "")
-      .replace(amountPattern, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .replace(/^[-–—\s]+/, "")
-      .trim()
-
-    let debit: number | null = null
-    let credit: number | null = null
-    let balance: number | null = null
-
-    if (amounts.length === 1) {
-      const amt = Math.abs(amounts[0])
-      if (lineMatchIndicatesDebit(line)) {
-        debit = amt
-      } else {
-        credit = amt
-      }
-    } else if (amounts.length === 2) {
-      const a = Math.abs(amounts[0])
-      const b = Math.abs(amounts[1])
-      if (lineMatchIndicatesDebit(line)) {
-        debit = a
-        balance = b
-      } else {
-        credit = a
-        balance = b
-      }
-    } else if (amounts.length >= 3) {
-      const a = Math.abs(amounts[0])
-      const b = Math.abs(amounts[1])
-      const c = Math.abs(amounts[2])
-      if (lineMatchIndicatesDebit(line)) {
-        debit = a
-        credit = b
-        balance = c
-      } else {
-        credit = a
-        debit = b
-        balance = c
-      }
-    }
-
-    if (description.length > 200) {
-      description = description.slice(0, 200)
-    }
-
-    if (description.length < 100 && (debit !== null || credit !== null)) {
-      results.push({
-        date: dateMatch,
-        description: description || "—",
-        debit,
-        credit,
-        balance,
-      })
-    }
-  }
-
-  return results
-}
-
-function matchFirst(text: string, patterns: RegExp[]): string | null {
-  for (const p of patterns) {
-    const m = text.match(p)
-    if (m) return m[1]
-  }
-  return null
-}
-
-function lineMatchIndicatesDebit(line: string): boolean {
-  const lower = line.toLowerCase()
-  if (lower.includes("dr") || lower.includes("debit") || lower.includes("withdraw") || lower.includes("paid") || lower.includes("debited")) {
-    return true
-  }
-  if (lower.includes("cr") || lower.includes("credit") || lower.includes("deposit") || lower.includes("credited")) {
-    return false
-  }
-  if (line.includes("-") && !line.includes("+")) {
-    const negMatch = line.match(/[–—-]\s*[₹$€]?\s*[\d,]+\.\d{2}/)
-    if (negMatch) return true
-  }
-  return false
-}
-
-function formatAmount(amount: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
-}
