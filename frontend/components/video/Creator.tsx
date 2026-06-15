@@ -129,22 +129,22 @@ export function VideoCreator() {
       {/* ========================================================= */}
       <div className="flex-1 flex flex-col min-w-0 border-r  h-full">
         {/* Header Bar with Segmented Tabs */}
-        <header className="h-14 px-6 border-b  flex items-center justify-between shrink-0 /90 backdrop-blur">
+        <header className="h-14 px-6 border-b flex items-center justify-between shrink-0 backdrop-blur">
           <div className="flex items-center gap-3">
-            <h1 className="font-semibold text-[15px] text-white tracking-tight">
+            <h1 className="font-semibold text-[15px] text-foreground tracking-tight">
               Shorts Creator
             </h1>
           </div>
 
           {/* Segmented Tab Controls */}
-          <div className="flex items-center  border  rounded-lg p-0.5">
+          <div className="flex items-center border rounded-lg p-0.5">
             <button
               onClick={() => setActiveTab("create")}
               className={cn(
                 "px-3 py-1.5 rounded-md text-[11px] font-bold tracking-wide transition duration-150 flex items-center gap-1.5",
                 activeTab === "create"
-                  ? "text-white shadow-sm"
-                  : "text-muted-foreground/75 hover:text-white"
+                  ? "text-foreground shadow-sm"
+                  : "text-muted-foreground/75 hover:text-foreground"
               )}
             >
               <PlusCircle className="size-3.5" />
@@ -155,8 +155,8 @@ export function VideoCreator() {
               className={cn(
                 "px-3 py-1.5 rounded-md text-[11px] font-bold tracking-wide transition duration-150 flex items-center gap-1.5",
                 activeTab === "library"
-                  ? "text-white shadow-sm"
-                  : "text-muted-foreground/75 hover:text-white"
+                  ? "text-foreground shadow-sm"
+                  : "text-muted-foreground/75 hover:text-foreground"
               )}
             >
               <History className="size-3.5" />
@@ -175,7 +175,7 @@ export function VideoCreator() {
               {/* Stepper Progress bar */}
               <div className="px-8 py-4 shrink-0">
                 <div className="max-w-xl mx-auto flex items-center justify-between relative">
-                  {[
+                   {[
                     { step: 0, label: "Topic" },
                     { step: 1, label: "Timeline" },
                     { step: 2, label: "Render" },
@@ -185,14 +185,14 @@ export function VideoCreator() {
                       <div className="flex flex-col items-center gap-1.5 relative z-10">
                         <div className={cn(
                           "size-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300",
-                          step === s.step ? "border-emerald-500 bg-emerald-600/10 text-emerald-400 shadow-sm" :
-                            step > s.step ? "border-emerald-600 bg-emerald-600 text-white" : "  text-muted-foreground"
+                          step === s.step ? "border-primary bg-primary/10 text-primary shadow-sm" :
+                            step > s.step ? "border-primary bg-primary text-primary-foreground" : "text-muted-foreground"
                         )}>
                           {step > s.step ? <CheckCircle2 className="size-4" /> : s.step + 1}
                         </div>
                         <span className={cn(
                           "text-[9px] uppercase tracking-wider font-bold",
-                          step >= s.step ? "text-emerald-400" : "text-muted-foreground/50"
+                          step >= s.step ? "text-primary" : "text-muted-foreground/50"
                         )}>{s.label}</span>
                       </div>
                       {idx < 2 && (
@@ -213,10 +213,10 @@ export function VideoCreator() {
                   {step === 0 && (
                     <div className="space-y-5 py-6">
                       <div className="text-center max-w-md mx-auto mb-8">
-                        <div className="size-12 rounded-2xl bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
-                          <PlusCircle className="size-6 text-emerald-500" />
+                        <div className="size-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
+                          <PlusCircle className="size-6 text-primary" />
                         </div>
-                        <h2 className="text-sm font-semibold text-white tracking-tight mb-2">Create an AI Short</h2>
+                        <h2 className="text-sm font-semibold text-foreground tracking-tight mb-2">Create an AI Short</h2>
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           Describe a topic and active AI nodes will compile narrated segments, code mockups, and overlay transitions.
                         </p>
@@ -228,11 +228,11 @@ export function VideoCreator() {
                           value={topic}
                           onChange={(e) => setTopic(e.target.value)}
                           disabled={loading}
-                          className="min-h-24 resize-none bg-transparent border-none outline-none shadow-none focus-visible:ring-0 p-1 text-sm text-zinc-200 placeholder-muted-foreground/40"
+                          className="min-h-24 resize-none bg-transparent border-none outline-none shadow-none focus-visible:ring-0 p-1 text-sm text-foreground placeholder-muted-foreground/40"
                         />
-                        <div className="flex justify-end pt-2 border-t ">
+                        <div className="flex justify-end pt-2 border-t">
                           <Button
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 px-4 rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-950/20"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-9 px-4 rounded-xl flex items-center gap-1.5 shadow-lg shadow-primary/20"
                             onClick={generateTimeline}
                             disabled={loading || !topic.trim()}
                           >
@@ -260,12 +260,12 @@ export function VideoCreator() {
                       animate={{ opacity: 1, y: 0 }}
                       className="space-y-6"
                     >
-                      <div className="flex items-center justify-between border-b  pb-4">
+                      <div className="flex items-center justify-between border-b pb-4">
                         <div>
-                          <h3 className="text-sm font-bold text-white tracking-tight">{timeline.title}</h3>
+                          <h3 className="text-sm font-bold text-foreground tracking-tight">{timeline.title}</h3>
                           <p className="text-[11px] text-muted-foreground/80 mt-1 font-medium flex items-center gap-2">
                             <span>Estimated Duration:</span>
-                            <span className="text-emerald-400 font-semibold">{timeline.duration}s</span>
+                            <span className="text-primary font-semibold">{timeline.duration}s</span>
                             <span>·</span>
                             <span>{timeline.scenes.length} Scenes</span>
                           </p>
@@ -277,18 +277,18 @@ export function VideoCreator() {
                         {timeline.scenes.map((scene: any, idx: number) => (
                           <div
                             key={idx}
-                            className="rounded-2xl  overflow-hidden group hover:border-zinc-800 transition duration-150"
+                            className="rounded-2xl overflow-hidden group hover:border-border transition duration-150"
                           >
                             {/* Scene Header */}
                             <div className="px-4 py-2.5 flex items-center justify-between">
                               <div className="flex items-center gap-2.5">
-                                <Badge className="text-zinc-300 h-5 px-2 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
-                                  {scene.type === "code" ? <CodeIcon className="size-3 text-emerald-400" /> : <LayoutIcon className="size-3 text-blue-400" />}
+                                <Badge className="text-foreground/80 h-5 px-2 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                  {scene.type === "code" ? <CodeIcon className="size-3 text-primary" /> : <LayoutIcon className="size-3 text-blue-400" />}
                                   {scene.type}
                                 </Badge>
                                 <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">Scene {idx + 1}</span>
                               </div>
-                              <div className="flex items-center gap-1 text-[9px] font-semibold text-muted-foreground  border  px-2 py-0.5 rounded-lg">
+                              <div className="flex items-center gap-1 text-[9px] font-semibold text-muted-foreground border px-2 py-0.5 rounded-lg">
                                 <ClockIcon className="size-3" />
                                 {scene.start}s - {scene.end}s
                               </div>
@@ -299,10 +299,10 @@ export function VideoCreator() {
                               {/* Narration script field */}
                               <div className="space-y-1.5">
                                 <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5 select-none">
-                                  <Type className="size-3 text-zinc-500" /> Voice Narration Script
+                                  <Type className="size-3 text-muted-foreground" /> Voice Narration Script
                                 </label>
                                 <Textarea
-                                  className="text-xs  border  rounded-xl p-3 text-zinc-200 placeholder-zinc-700 min-h-[72px] resize-none focus-visible:ring-1 focus-visible:ring-emerald-600 focus-visible:border-emerald-600"
+                                  className="text-xs border rounded-xl p-3 text-foreground placeholder-muted-foreground/50 min-h-[72px] resize-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary"
                                   value={scene.content}
                                   onChange={(e) => {
                                     const newScenes = [...timeline.scenes];
@@ -316,10 +316,10 @@ export function VideoCreator() {
                               {scene.type === "code" && (
                                 <div className="space-y-1.5">
                                   <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5 select-none">
-                                    <CodeIcon className="size-3 text-zinc-500" /> Screen Code Snippet
+                                    <CodeIcon className="size-3 text-muted-foreground" /> Screen Code Snippet
                                   </label>
                                   <Textarea
-                                    className="font-mono text-[10px]  border  rounded-xl p-3 text-emerald-400 placeholder-zinc-700 min-h-[72px] resize-none focus-visible:ring-1 focus-visible:ring-emerald-600 focus-visible:border-emerald-600"
+                                    className="font-mono text-[10px] border rounded-xl p-3 text-primary placeholder-muted-foreground/50 min-h-[72px] resize-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary"
                                     value={scene.code}
                                     onChange={(e) => {
                                       const newScenes = [...timeline.scenes];
@@ -335,10 +335,10 @@ export function VideoCreator() {
                       </div>
 
                       {/* Render Trigger */}
-                      <div className="pt-6 border-t ">
+                      <div className="pt-6 border-t">
                         <Button
                           size="lg"
-                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/20"
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
                           onClick={finalizeVideo}
                           disabled={loading}
                         >
@@ -362,18 +362,18 @@ export function VideoCreator() {
                   {step === 2 && (
                     <div className="space-y-5 py-6">
                       <div className="text-center max-w-md mx-auto mb-6 select-none">
-                        <div className="size-12 rounded-2xl bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
-                          <CheckCircle2 className="size-6 text-emerald-500" />
+                        <div className="size-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
+                          <CheckCircle2 className="size-6 text-primary" />
                         </div>
-                        <h3 className="text-sm font-semibold text-white tracking-tight mb-2">Short Rendered!</h3>
+                        <h3 className="text-sm font-semibold text-foreground tracking-tight mb-2">Short Rendered!</h3>
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           Your visual short is fully generated. Review the vertical preview on the right and download your MP4.
                         </p>
                       </div>
 
-                      <div className="flex flex-col gap-3 p-4  border  rounded-2xl">
+                      <div className="flex flex-col gap-3 p-4 border rounded-2xl">
                         <Button
-                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-9 rounded-xl flex items-center justify-center gap-1.5"
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-9 rounded-xl flex items-center justify-center gap-1.5"
                           onClick={() => window.location.href = apiUrl(videoUrl)}
                         >
                           <DownloadIcon className="size-4" />
@@ -381,7 +381,7 @@ export function VideoCreator() {
                         </Button>
                         <Button
                           variant="ghost"
-                          className="w-full border  hover:bg-zinc-900 text-zinc-300 font-bold text-xs h-9 rounded-xl flex items-center justify-center gap-1.5"
+                          className="w-full border hover:bg-accent text-foreground/80 font-bold text-xs h-9 rounded-xl flex items-center justify-center gap-1.5"
                           onClick={() => {
                             setStep(0)
                             setTopic("")
@@ -423,8 +423,8 @@ export function VideoCreator() {
                         )}
                       >
                         <div className="min-w-0 flex-1 leading-normal">
-                          <p className="font-semibold text-xs text-white truncate group-hover:text-emerald-400 transition flex items-center gap-1.5">
-                            <Video className="size-3.5 text-zinc-400 shrink-0 group-hover:text-emerald-400" />
+                          <p className="font-semibold text-xs text-foreground truncate group-hover:text-primary transition flex items-center gap-1.5">
+                            <Video className="size-3.5 text-muted-foreground shrink-0 group-hover:text-primary" />
                             {vid.title}
                           </p>
                           <p className="text-[10px] text-muted-foreground/60 mt-1 font-medium">
@@ -433,7 +433,7 @@ export function VideoCreator() {
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0 select-none">
-                          <span className="text-[9px] font-bold text-muted-foreground px-2 py-0.5 rounded-lg group-hover:border-zinc-700 transition">
+                          <span className="text-[9px] font-bold text-muted-foreground px-2 py-0.5 rounded-lg group-hover:border-border transition">
                             MP4
                           </span>
                         </div>
@@ -443,8 +443,8 @@ export function VideoCreator() {
 
                   {history.length === 0 && (
                     <div className="py-24 text-center select-none">
-                      <SmartphoneIcon className="size-8 text-zinc-600 mx-auto mb-4 opacity-50 animate-pulse" />
-                      <p className="text-xs font-semibold text-white">No videos generated yet</p>
+                      <SmartphoneIcon className="size-8 text-muted-foreground/60 mx-auto mb-4 opacity-50 animate-pulse" />
+                      <p className="text-xs font-semibold text-foreground">No videos generated yet</p>
                       <p className="text-[10px] text-muted-foreground mt-1 max-w-[220px] mx-auto leading-relaxed">
                         Start drafting video ideas in the &ldquo;Create&rdquo; tab to seed your project video library!
                       </p>
@@ -463,9 +463,9 @@ export function VideoCreator() {
       {/* ============================================================== */}
       <div className="w-[360px] flex flex-col  h-full shrink-0 select-none">
         {/* Top Header tab with underline */}
-        <header className="h-14 border-b  flex shrink-0">
+        <header className="h-14 border-b flex shrink-0">
           <div className="w-full flex">
-            <div className="flex-1 text-[11px] font-bold tracking-wide uppercase flex items-center justify-center gap-1.5 border-b-2 border-emerald-500 text-white bg-zinc-900/10 h-full">
+            <div className="flex-1 text-[11px] font-bold tracking-wide uppercase flex items-center justify-center gap-1.5 border-b-2 border-primary text-foreground bg-muted/50 h-full">
               <SmartphoneIcon className="size-3.5" />
               Preview Player
             </div>
@@ -481,7 +481,7 @@ export function VideoCreator() {
               {/* CSS Simulated Phone Bezel Bezel frame */}
               <div className="aspect-[9/16] w-full max-w-[215px] mx-auto rounded-3xl border-[6px] bg-black relative overflow-hidden shadow-2xl shrink-0 flex items-center justify-center">
                 {/* Simulated Notch */}
-                <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-14 h-2.5 bg-zinc-800 rounded-full z-20" />
+                <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-14 h-2.5 bg-muted rounded-full z-20" />
 
                 {/* Active Player */}
                 <video
@@ -495,7 +495,7 @@ export function VideoCreator() {
 
               {/* Download Details Bar */}
               <div className="text-center max-w-[240px] mx-auto shrink-0 select-none">
-                <p className="text-[11px] font-semibold text-zinc-200 truncate">
+                <p className="text-[11px] font-semibold text-foreground truncate">
                   {previewTitle || "Project Short"}
                 </p>
                 <p className="text-[9px] text-muted-foreground mt-0.5 font-medium">
@@ -504,7 +504,7 @@ export function VideoCreator() {
                 <div className="mt-3">
                   <Button
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold h-7 px-3.5 rounded-lg flex items-center justify-center gap-1 mx-auto"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-[10px] font-bold h-7 px-3.5 rounded-lg flex items-center justify-center gap-1 mx-auto"
                     onClick={() => window.location.href = apiUrl(previewVideoUrl)}
                   >
                     <DownloadIcon className="size-3" />
@@ -522,7 +522,7 @@ export function VideoCreator() {
               {step === 1 && timeline ? (
                 <div className="space-y-5 text-left h-full flex flex-col min-h-0">
                   <div className="shrink-0 flex items-center gap-1.5 mb-1">
-                    <LayersIcon className="size-4 text-emerald-400" />
+                    <LayersIcon className="size-4 text-primary" />
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                       Storyboard Outlines
                     </h4>
@@ -533,16 +533,16 @@ export function VideoCreator() {
                       {timeline.scenes.map((scene: any, idx: number) => (
                         <div
                           key={idx}
-                          className="p-3 rounded-xl border  /40 leading-normal flex items-start gap-2.5"
+                          className="p-3 rounded-xl border leading-normal flex items-start gap-2.5"
                         >
                           <div className={cn(
                             "size-6 rounded-md font-bold text-[9px] flex items-center justify-center border shrink-0",
-                            scene.type === "code" ? "bg-emerald-950/20 text-emerald-400 border-emerald-800/40" : "bg-blue-950/20 text-blue-400 border-blue-800/40"
+                            scene.type === "code" ? "bg-primary/10 text-primary border-primary/20" : "bg-blue-950/20 text-blue-400 border-blue-800/40"
                           )}>
                             S{idx + 1}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[9px] font-bold text-white uppercase tracking-wider">
+                            <p className="text-[9px] font-bold text-foreground uppercase tracking-wider">
                               {scene.type === "code" ? "Code Overlay Visual" : "Talk Narrative layout"}
                             </p>
                             <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">
@@ -558,8 +558,8 @@ export function VideoCreator() {
 
                 // Fallback storyboard instructions
                 <div className="space-y-4 max-w-[200px] mx-auto py-12">
-                  <SmartphoneIcon className="size-10 text-zinc-700 mx-auto mb-1 animate-pulse" />
-                  <h4 className="text-xs font-semibold text-zinc-300 tracking-tight">Active Viewport</h4>
+                  <SmartphoneIcon className="size-10 text-muted-foreground/30 mx-auto mb-1 animate-pulse" />
+                  <h4 className="text-xs font-semibold text-foreground/70 tracking-tight">Active Viewport</h4>
                   <p className="text-[10px] text-muted-foreground leading-relaxed font-medium">
                     Input a video topic idea and generate script timelines to seed preview overlays.
                   </p>

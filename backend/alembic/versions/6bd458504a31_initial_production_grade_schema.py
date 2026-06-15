@@ -5,19 +5,19 @@ Revises:
 Create Date: 2026-05-14 21:02:03.148944
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
+
+import pgvector.sqlalchemy
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 from alembic import op
-import sqlalchemy as sa
-import pgvector.sqlalchemy
-
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = '6bd458504a31'
-down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -27,13 +27,25 @@ def upgrade() -> None:
     sa.Column('email', sa.String(length=320), nullable=False),
     sa.Column('hashed_password', sa.String(), nullable=False),
     sa.Column('display_name', sa.String(length=120), nullable=True),
-    sa.Column('theme_preference', sa.Enum('SYSTEM', 'LIGHT', 'DARK', name='theme_preference_enum'), nullable=False),
-    sa.Column('default_home_tab', sa.Enum('CHAT', 'LIBRARY', 'SETTINGS', name='home_tab_enum'), nullable=False),
+    sa.Column('theme_preference',
+              sa.Enum('SYSTEM', 'LIGHT', 'DARK', name='theme_preference_enum'),
+              nullable=False),
+    sa.Column('default_home_tab',
+              sa.Enum('CHAT', 'LIBRARY', 'SETTINGS', name='home_tab_enum'),
+              nullable=False),
     sa.Column('sidebar_collapsed', sa.Boolean(), nullable=False),
-    sa.Column('new_chat_scope_mode', sa.Enum('CLEAR', 'REMEMBER', 'ALL_COMPLETED', name='chat_scope_mode_enum'), nullable=False),
+    sa.Column('new_chat_scope_mode',
+              sa.Enum('CLEAR', 'REMEMBER', 'ALL_COMPLETED', name='chat_scope_mode_enum'),
+              nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
+    sa.Column('updated_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
@@ -44,19 +56,34 @@ def upgrade() -> None:
     sa.Column('audio_path', sa.String(length=1024), nullable=True),
     sa.Column('image_path', sa.String(length=1024), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
+    sa.Column('updated_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_generated_videos_user_id'), 'generated_videos', ['user_id'], unique=False)
+    op.create_index(op.f('ix_generated_videos_user_id'),
+                    'generated_videos',
+                    ['user_id'],
+                    unique=False)
     op.create_table('projects',
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(length=255), nullable=False),
     sa.Column('system_prompt', sa.Text(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
+    sa.Column('updated_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id', 'name', name='uq_projects_user_name')
@@ -66,12 +93,21 @@ def upgrade() -> None:
     sa.Column('project_id', sa.UUID(), nullable=False),
     sa.Column('title', sa.String(length=255), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
+    sa.Column('updated_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
     sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_conversations_project_id'), 'conversations', ['project_id'], unique=False)
+    op.create_index(op.f('ix_conversations_project_id'),
+                    'conversations',
+                    ['project_id'],
+                    unique=False)
     op.create_table('documents',
     sa.Column('project_id', sa.UUID(), nullable=False),
     sa.Column('filename', sa.String(length=512), nullable=False),
@@ -79,18 +115,32 @@ def upgrade() -> None:
     sa.Column('source_bytes', sa.LargeBinary(), nullable=False),
     sa.Column('file_size', sa.Integer(), nullable=False),
     sa.Column('content_sha256', sa.String(length=64), nullable=False),
-    sa.Column('status', sa.Enum('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', name='document_status_enum'), nullable=False),
+    sa.Column('status',
+              sa.Enum('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', name='document_status_enum'),
+              nullable=False),
     sa.Column('error_message', sa.Text(), nullable=True),
     sa.Column('processed_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
+    sa.Column('updated_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
     sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_documents_content_sha256'), 'documents', ['content_sha256'], unique=False)
+    op.create_index(op.f('ix_documents_content_sha256'),
+                    'documents',
+                    ['content_sha256'],
+                    unique=False)
     op.create_index(op.f('ix_documents_project_id'), 'documents', ['project_id'], unique=False)
-    op.create_index('ix_documents_project_status', 'documents', ['project_id', 'status'], unique=False)
+    op.create_index('ix_documents_project_status',
+                    'documents',
+                    ['project_id', 'status'],
+                    unique=False)
     op.create_table('document_chunks',
     sa.Column('document_id', sa.UUID(), nullable=False),
     sa.Column('chunk_index', sa.Integer(), nullable=False),
@@ -102,19 +152,38 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('document_id', 'chunk_index', name='uq_document_chunk_index')
     )
-    op.create_index('ix_document_chunks_document_id', 'document_chunks', ['document_id'], unique=False)
-    op.create_index('ix_document_chunks_embedding_cosine', 'document_chunks', ['embedding'], unique=False, postgresql_using='ivfflat', postgresql_ops={'embedding': 'vector_cosine_ops'}, postgresql_with={'lists': 100})
+    op.create_index('ix_document_chunks_document_id',
+                    'document_chunks',
+                    ['document_id'],
+                    unique=False)
+    op.create_index(
+        'ix_document_chunks_embedding_cosine',
+        'document_chunks',
+        ['embedding'],
+        unique=False,
+        postgresql_using='ivfflat',
+        postgresql_ops={'embedding': 'vector_cosine_ops'},
+        postgresql_with={'lists': 100}
+    )
     op.create_table('messages',
     sa.Column('conversation_id', sa.UUID(), nullable=False),
-    sa.Column('role', sa.Enum('USER', 'ASSISTANT', 'SYSTEM', name='message_role_enum'), nullable=False),
+    sa.Column('role',
+              sa.Enum('USER', 'ASSISTANT', 'SYSTEM', name='message_role_enum'),
+              nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
     sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.ForeignKeyConstraint(['conversation_id'], ['conversations.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index('ix_messages_conversation_created', 'messages', ['conversation_id', 'created_at'], unique=False)
+    op.create_index('ix_messages_conversation_created',
+                    'messages',
+                    ['conversation_id', 'created_at'],
+                    unique=False)
     # ### end Alembic commands ###
 
 
@@ -123,7 +192,13 @@ def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
     op.drop_index('ix_messages_conversation_created', table_name='messages')
     op.drop_table('messages')
-    op.drop_index('ix_document_chunks_embedding_cosine', table_name='document_chunks', postgresql_using='ivfflat', postgresql_ops={'embedding': 'vector_cosine_ops'}, postgresql_with={'lists': 100})
+    op.drop_index(
+        'ix_document_chunks_embedding_cosine',
+        table_name='document_chunks',
+        postgresql_using='ivfflat',
+        postgresql_ops={'embedding': 'vector_cosine_ops'},
+        postgresql_with={'lists': 100}
+    )
     op.drop_index('ix_document_chunks_document_id', table_name='document_chunks')
     op.drop_table('document_chunks')
     op.drop_index('ix_documents_project_status', table_name='documents')

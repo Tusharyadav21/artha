@@ -5,6 +5,7 @@ import { FolderPlusIcon, UploadIcon, XIcon, FileIcon, Loader2Icon } from "lucide
 
 import { useWorkspace } from "@/components/app/workspace-provider"
 import { Button } from "@/components/ui/button"
+import { toast } from "@/components/ui/toast"
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
+import { MAX_UPLOAD_SIZE, ACCEPTED_FILE_TYPES } from "@/lib/constants"
 
 interface CreateProjectDialogProps {
   trigger?: React.ReactElement
@@ -41,7 +43,14 @@ export function CreateProjectDialog({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles((prev) => [...prev, ...Array.from(e.target.files!)])
+      const selectedFiles = Array.from(e.target.files)
+      const validFiles = selectedFiles.filter(f => f.size <= MAX_UPLOAD_SIZE)
+      
+      if (validFiles.length < selectedFiles.length) {
+        toast.error("Some files exceed the 10MB limit and were skipped")
+      }
+      
+      setFiles((prev) => [...prev, ...validFiles])
     }
   }
 
@@ -116,6 +125,7 @@ export function CreateProjectDialog({
                 multiple
                 ref={fileInputRef}
                 className="hidden"
+                accept={ACCEPTED_FILE_TYPES}
                 onChange={handleFileChange}
               />
             </div>

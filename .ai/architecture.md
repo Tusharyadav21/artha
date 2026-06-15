@@ -111,7 +111,7 @@ Refer to [docs/api.md](api.md) for detailed descriptions of all FastAPI APIRoute
 
 ## ⚡ 4. Asynchronous Document Ingestion Sequence
 
-Uploads are non-blocking; the API saves metadata, enqueues the job to Arq, and returns immediate acknowledgment.
+Uploads are non-blocking; the API saves metadata, enqueues the job to Arq, and returns immediate acknowledgment. The `arq_worker` now delegates ingestion processing to a LangGraph state machine (`agents/ingestion.py`). File sizes are constrained by a 10MB limit on the frontend.
 
 ```mermaid
 sequenceDiagram
@@ -122,6 +122,7 @@ sequenceDiagram
   participant DR as DocumentRepository
   participant R as Redis (arq)
   participant W as arq_worker.process_document
+  participant G as agents/ingestion.py (LangGraph)
   participant ING as services/ingestion
   participant OL as OllamaClient
   participant PG as Postgres
@@ -136,12 +137,18 @@ sequenceDiagram
 
   R->>W: deliver job
   W->>DR: set_status(processing)
-  W->>ING: parse_document_bytes
-  W->>ING: chunk_text(260 words / 40 overlap)
-  loop per chunk
-    W->>OL: embed(chunk)
-    OL-->>W: embedding[768]
+  W->>G: ainvoke({source_bytes, ...})
+  
+  rect rgb(40, 40, 40)
+    Note over G,OL: LangGraph Ingestion Pipeline
+    G->>ING: parse_document_bytes (MarkItDown)
+    G->>OL: extract_metadata (title, author, summary)
+    G->>ING: chunk_text_hierarchical (sentence packing)
+    G->>ING: embed_chunks_enriched
+    ING->>OL: embed(enriched_text)
   end
+  
+  G-->>W: {metadata, embedded_chunks}
   W->>DR: replace_chunks
   W->>DR: set_status(completed | failed)
   DR->>PG: INSERT document_chunks

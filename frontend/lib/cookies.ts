@@ -1,25 +1,20 @@
-/**
- * Simple client-side cookie utilities to sync auth state for the server.
- */
-
 export function setCookie(name: string, value: string, days = 7) {
   const date = new Date()
   date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000)
-  const expires = "; expires=" + date.toUTCString()
-  document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax"
+  document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; expires=${date.toUTCString()}; path=/; SameSite=Lax`
 }
 
 export function getCookie(name: string) {
-  const nameEQ = name + "="
-  const ca = document.cookie.split(";")
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i]
-    while (c.charAt(0) === " ") c = c.substring(1, c.length)
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length)
+  const encodedName = encodeURIComponent(name) + "="
+  const cookies = document.cookie.split("; ")
+  for (const cookie of cookies) {
+    if (cookie.startsWith(encodedName)) {
+      return decodeURIComponent(cookie.slice(encodedName.length))
+    }
   }
   return null
 }
 
 export function removeCookie(name: string) {
-  document.cookie = name + "=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;"
+  document.cookie = `${encodeURIComponent(name)}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax`
 }

@@ -164,7 +164,7 @@ check_ollama() {
         
         # Load models from env or default
         local OLLAMA_REASONER=${OLLAMA_MODEL_REASONER:-"gemma4:e4b"}
-        local OLLAMA_EMBED=${OLLAMA_MODEL_EMBED:-"nomic-embed-text"}
+        local OLLAMA_EMBED=${OLLAMA_MODEL_EMBED:-"bge-m3"}
         
         log_info "Checking pulled models..."
         local pulled_models=$(curl -s http://localhost:11434/api/tags)
@@ -172,13 +172,25 @@ check_ollama() {
         if echo "$pulled_models" | grep -q "$OLLAMA_REASONER"; then
             log_success "Model '$OLLAMA_REASONER' (Reasoner) is already pulled."
         else
-            log_warning "Model '$OLLAMA_REASONER' is not pulled. You can pull it using: ollama pull $OLLAMA_REASONER"
+            log_warning "Model '$OLLAMA_REASONER' is not pulled. Attempting to pull automatically..."
+            ollama pull "$OLLAMA_REASONER"
+            if [ $? -eq 0 ]; then
+                log_success "Successfully pulled '$OLLAMA_REASONER'."
+            else
+                log_warning "Failed to auto-pull '$OLLAMA_REASONER'. Pull manually: ollama pull $OLLAMA_REASONER"
+            fi
         fi
         
         if echo "$pulled_models" | grep -q "$OLLAMA_EMBED"; then
             log_success "Model '$OLLAMA_EMBED' (Embeddings) is already pulled."
         else
-            log_warning "Model '$OLLAMA_EMBED' is not pulled. You can pull it using: ollama pull $OLLAMA_EMBED"
+            log_warning "Model '$OLLAMA_EMBED' is not pulled. Attempting to pull automatically..."
+            ollama pull "$OLLAMA_EMBED"
+            if [ $? -eq 0 ]; then
+                log_success "Successfully pulled '$OLLAMA_EMBED'."
+            else
+                log_warning "Failed to auto-pull '$OLLAMA_EMBED'. Pull manually: ollama pull $OLLAMA_EMBED"
+            fi
         fi
     else
         log_warning "Ollama host is NOT reachable at http://localhost:11434"

@@ -1,9 +1,18 @@
 "use client"
 
 import * as React from "react"
-import { SaveIcon } from "lucide-react"
+
+import {
+  CheckIcon,
+  MonitorIcon,
+  MoonIcon,
+  SaveIcon,
+  SunIcon,
+} from "lucide-react"
 
 import { useWorkspace } from "@/components/app/workspace-provider"
+import { Avatar, AvatarFallback } from "@/components/app/ui-avatar"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -15,10 +24,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback } from "@/components/app/ui-avatar"
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { MonitorIcon, SunIcon, MoonIcon, CheckIcon } from "lucide-react"
 
 // fallow-ignore-next-line complexity
 export function SettingsView() {
@@ -26,20 +32,21 @@ export function SettingsView() {
   const [activeTab, setActiveTab] = React.useState("profile")
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
-      <TabsList className="w-fit" variant="line">
-        <TabsTrigger value="profile">
-          Profile
-        </TabsTrigger>
-        <TabsTrigger value="appearance">
-          Appearance
-        </TabsTrigger>
-        <TabsTrigger value="chat">
-          Chat Defaults
-        </TabsTrigger>
-      </TabsList>
+    <div className="flex h-full flex-col overflow-y-auto px-6 py-5">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-fit" variant="line">
+          <TabsTrigger value="profile">
+            Profile
+          </TabsTrigger>
+          <TabsTrigger value="appearance">
+            Appearance
+          </TabsTrigger>
+          <TabsTrigger value="chat">
+            Chat Defaults
+          </TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="profile">
+        <TabsContent value="profile">
         <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>
@@ -101,7 +108,8 @@ export function SettingsView() {
           </CardContent>
         </Card>
       </TabsContent>
-    </Tabs>
+      </Tabs>
+    </div>
   )
 }
 
