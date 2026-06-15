@@ -17,12 +17,8 @@ function parseSseEvents(buffer: string): {
       const data: string[] = []
 
       for (const line of chunk.split("\n")) {
-        if (line.startsWith("event:")) {
-          event = line.slice("event:".length).trim()
-        }
-        if (line.startsWith("data:")) {
-          data.push(line.slice("data:".length).trimStart())
-        }
+        if (line.startsWith("event:")) event = line.slice("event:".length).trim()
+        if (line.startsWith("data:")) data.push(line.slice("data:".length).trimStart())
       }
 
       return { event, data: data.join("\n") }
@@ -43,7 +39,6 @@ export interface StreamChatConfig {
   onFinal?: (payload: { message_id: string; content: string }) => void
 }
 
-// fallow-ignore-next-line complexity
 export async function streamChat({
   projectId,
   token,
@@ -66,9 +61,7 @@ export async function streamChat({
   if (!response.ok || !response.body) {
     let message = "Chat failed"
     try {
-      const payload = JSON.parse(await response.text()) as {
-        detail?: string
-      }
+      const payload = JSON.parse(await response.text()) as { detail?: string }
       message = payload.detail || message
     } catch {
       // Keep the generic message if the backend did not return JSON.
@@ -102,10 +95,7 @@ export async function streamChat({
         const nodeName = JSON.parse(eventChunk.data) as string
         onNode?.(nodeName)
       } else if (eventChunk.event === "final") {
-        const payload = JSON.parse(eventChunk.data) as {
-          message_id: string
-          content: string
-        }
+        const payload = JSON.parse(eventChunk.data) as { message_id: string; content: string }
         onFinal?.(payload)
       } else if (eventChunk.event === "error") {
         const payload = JSON.parse(eventChunk.data) as { detail: string }

@@ -42,7 +42,8 @@ def _fernet() -> Fernet:
 
     Priority:
       1. ENCRYPTION_KEY env var — a pre-generated Fernet key (recommended for production).
-         Generate once with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+         Generate once with: python -c "from cryptography.fernet import Fernet; \
+print(Fernet.generate_key().decode())"
       2. Fallback: derive 32-byte key from jwt_secret via HKDF-SHA256 with an
          app-specific salt and info label. Better than raw SHA-256, but rotating
          the jwt_secret will invalidate all stored keys — set ENCRYPTION_KEY in prod.

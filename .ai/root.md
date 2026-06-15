@@ -8,4 +8,5 @@ Modern agents should start here.
 - `backend.md`: Backend (Python/FastAPI) structure rules.
 - `frontend.md`: Frontend (Next.js) structure rules.
 - `database.md`: Database schemas and pgvector rules.
+- `agents.md`: LangGraph agent patterns and pipeline architecture.
 - `workflows.md`: CLI cheat sheets and standard operating procedures.

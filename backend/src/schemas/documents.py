@@ -3,8 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-
 from src.domain.models import DocumentStatus
+
 
 class DocumentRead(BaseModel):
     """

@@ -67,6 +67,7 @@ graph TB
     subgraph Backend
         API["FastAPI Server"]
         Worker["ARQ Background Worker"]
+        LGI["LangGraph Ingestion Pipeline"]
     end
 
     subgraph Data
@@ -86,8 +87,9 @@ graph TB
     FE -- "REST + SSE" --> API
     API -- "Enqueue Jobs" --> Redis
     Redis -- "Dequeue Jobs" --> Worker
-    Worker -- "Parse + Chunk + Embed" --> PG
-    Worker -- "Generate Enrichments" --> Ollama
+    Worker -- "Invoke" --> LGI
+    LGI -- "Parse + Chunk + Embed" --> PG
+    LGI -- "Generate Enrichments" --> Ollama
     API -- "Hybrid Search (RRF)" --> PG
     API -- "Embed Queries + Stream LLM" --> Ollama
     API -- "Rerank Results" --> Reranker

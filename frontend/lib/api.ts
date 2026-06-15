@@ -80,6 +80,8 @@ export interface Source {
   filename: string
   content: string
   score: number
+  image_path: string | null
+  image_caption: string | null
 }
 
 export interface ChatRequest {
@@ -111,29 +113,21 @@ export interface FeedbackRequest {
 }
 
 function getNetworkErrorMessage(): string {
-  const origin =
-    typeof window === "undefined" ? "" : ` from ${window.location.origin}`
+  const origin = typeof window === "undefined" ? "" : ` from ${window.location.origin}`
   return `Could not reach API at ${API_URL}${origin}. Make sure the backend is running and that CORS allows this frontend origin.`
 }
 
-// fallow-ignore-next-line complexity
 async function readErrorDetail(response: Response): Promise<string> {
   const body = await response.text()
-  if (!body) {
-    return `Request failed with ${response.status}`
-  }
+  if (!body) return `Request failed with ${response.status}`
 
   try {
     const parsed = JSON.parse(body) as { detail?: unknown }
-    if (typeof parsed.detail === "string") {
-      return parsed.detail
-    }
+    if (typeof parsed.detail === "string") return parsed.detail
     if (Array.isArray(parsed.detail)) {
       return parsed.detail
         .map((item) => {
-          if (typeof item === "object" && item && "msg" in item) {
-            return String(item.msg)
-          }
+          if (typeof item === "object" && item && "msg" in item) return String(item.msg)
           return String(item)
         })
         .join("; ")
@@ -145,16 +139,13 @@ async function readErrorDetail(response: Response): Promise<string> {
   return body
 }
 
-// fallow-ignore-next-line complexity
 export async function apiFetch<T>(
   path: string,
   token: string | null,
   init: RequestInit = {}
 ): Promise<T> {
   const headers = new Headers(init.headers)
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`)
-  }
+  if (token) headers.set("Authorization", `Bearer ${token}`)
   if (!(init.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json")
   }
@@ -163,18 +154,12 @@ export async function apiFetch<T>(
   try {
     response = await fetch(apiUrl(path), { ...init, headers })
   } catch (caught) {
-    if (caught instanceof TypeError) {
-      throw new Error(getNetworkErrorMessage())
-    }
+    if (caught instanceof TypeError) throw new Error(getNetworkErrorMessage())
     throw caught
   }
 
-  if (!response.ok) {
-    throw new Error(await readErrorDetail(response))
-  }
-  if (response.status === 204) {
-    return undefined as T
-  }
+  if (!response.ok) throw new Error(await readErrorDetail(response))
+  if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
 }
 
@@ -195,4 +180,3 @@ export const DEFAULT_OLLAMA_SETTINGS: OllamaSettings = {
   numCtx: 4096,
   numPredict: 512,
 }
-

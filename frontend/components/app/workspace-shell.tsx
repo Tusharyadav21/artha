@@ -2,15 +2,12 @@
 
 import * as React from "react"
 import {
-  LogOutIcon,
   MenuIcon,
   MessageSquarePlusIcon,
   MonitorIcon,
   MoonStarIcon,
-  SettingsIcon,
   SunMediumIcon,
   CheckIcon,
-  SearchIcon,
 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -29,7 +26,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/app/ui-tooltip"
 import { type DocumentItem } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import { scaleIn } from "@/lib/motion"
 import { Badge } from "../ui/badge"
 
 function nextThemePreference(current: "system" | "light" | "dark") {
@@ -57,6 +53,24 @@ function pageMeta(pathname: string) {
     return {
       title: "Personal settings",
       description: "Control your profile, appearance, and default chat behavior.",
+    }
+  }
+  if (pathname.startsWith("/analytics")) {
+    return {
+      title: "Analytics & Insights",
+      description: "Usage metrics, system health, and knowledge density overview.",
+    }
+  }
+  if (pathname.startsWith("/video")) {
+    return {
+      title: "Video Studio",
+      description: "Generate AI-powered short-form videos from your content.",
+    }
+  }
+  if (pathname.startsWith("/financial")) {
+    return {
+      title: "Financial Dashboard",
+      description: "Upload statements and view extracted data.",
     }
   }
   return {
@@ -367,7 +381,7 @@ function WorkspaceFrame({ children }: React.PropsWithChildren) {
     )
   }
 
-  const isWorkspaceView = pathname.startsWith("/chat") || pathname.startsWith("/analytics")
+  const isWorkspaceView = pathname.startsWith("/chat") || pathname.startsWith("/analytics") || pathname.startsWith("/video") || pathname.startsWith("/financial")
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId)
 
@@ -395,12 +409,35 @@ function WorkspaceFrame({ children }: React.PropsWithChildren) {
               <span className="max-w-[120px] truncate">{activeProject?.name || "Artha"}</span>
               <span className="text-muted-foreground/40">/</span>
               <span className="max-w-[200px] truncate text-foreground">
-                {isWorkspaceView ? activeConversation?.title || "New Chat" : "Settings"}
+                {pathname.startsWith("/settings")
+                  ? "Settings"
+                  : pathname.startsWith("/analytics")
+                    ? "Analytics & Insights"
+                    : pathname.startsWith("/video")
+                      ? "Video Studio"
+                      : pathname.startsWith("/financial")
+                        ? "Financial Dashboard"
+                        : activeConversation?.title || "New Chat"}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="New chat"
+                  onClick={() => setIsNewChatOpen(true)}
+                >
+                  <MessageSquarePlusIcon className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>New chat</TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger>
                 <Button

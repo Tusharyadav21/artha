@@ -5,17 +5,18 @@ Revises: 6bd458504a31
 Create Date: 2026-06-04 03:00:15.020731
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
+
 # revision identifiers, used by Alembic.
 revision: str = '396d0b3698f9'
-down_revision: Union[str, Sequence[str], None] = '6bd458504a31'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = '6bd458504a31'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -25,13 +26,22 @@ def upgrade() -> None:
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
+    sa.Column('updated_at',
+              sa.DateTime(timezone=True),
+              server_default=sa.text('now()'),
+              nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_user_memories_user_id'), 'user_memories', ['user_id'], unique=False)
-    op.add_column('documents', sa.Column('extracted_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True))
+    op.add_column('documents',
+                  sa.Column('extracted_metadata',
+                            postgresql.JSONB(astext_type=sa.Text()),
+                            nullable=True))
     # ### end Alembic commands ###
 
 

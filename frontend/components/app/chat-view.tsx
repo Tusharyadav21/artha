@@ -27,7 +27,9 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/app/ui-tooltip"
+import { toast } from "@/components/ui/toast"
 import { cn } from "@/lib/utils"
+import { MAX_UPLOAD_SIZE, ACCEPTED_FILE_TYPES } from "@/lib/constants"
 import { motion, AnimatePresence } from "framer-motion"
 
 // Helper to format bytes nicely
@@ -132,7 +134,10 @@ export function ChatView() {
     submitMessage,
     sendFeedback,
     documents,
+    documentsTotal,
     selectedDocumentIds,
+    activeProjectId,
+    conversationsTotal,
     isUploading,
     isSavingProject,
     toggleDocumentScope,
@@ -185,6 +190,11 @@ export function ChatView() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    if (file.size > MAX_UPLOAD_SIZE) {
+      toast.error("File exceeds the 10MB limit")
+      e.target.value = ""
+      return
+    }
     void uploadDocument(file)
     e.target.value = ""
   }
@@ -274,7 +284,7 @@ export function ChatView() {
         ref={fileInputRef}
         onChange={handleFileChange}
         className="hidden"
-        accept=".pdf,.xlsx,.xls,.csv,.pptx,.ppt,.txt,.doc,.docx,.png,.jpg,.jpeg,.tiff"
+        accept={ACCEPTED_FILE_TYPES}
       />
 
       {/* Main Center Area */}
@@ -421,6 +431,19 @@ export function ChatView() {
                                                     </span>
                                                   )}
                                                 </div>
+                                                {source.image_caption && (
+                                                  <div className="mb-3 rounded-lg overflow-hidden border border-border bg-muted">
+                                                    <img
+                                                      src={`/api/projects/${activeProjectId}/documents/${source.document_id}/file`}
+                                                      alt={source.image_caption}
+                                                      className="w-full h-auto max-h-64 object-contain"
+                                                      loading="lazy"
+                                                    />
+                                                    <div className="px-3 py-2 text-[11px] text-muted-foreground bg-background/80 border-t border-border">
+                                                      {source.image_caption}
+                                                    </div>
+                                                  </div>
+                                                )}
                                                 <div className="text-[12px] text-muted-foreground leading-relaxed font-sans bg-background border border-border p-3 rounded-lg italic">
                                                   &ldquo;{source.content.length > 400 ? `${source.content.slice(0, 400)}...` : source.content}&rdquo;
                                                 </div>
@@ -504,6 +527,25 @@ export function ChatView() {
                         })
                       )}
                     </AnimatePresence>
+
+                    {/* Conversation insights footer */}
+                    {messages.length > 0 && (
+                      <div className="pt-4 pb-2 border-t border-border/40">
+                        <div className="flex items-center gap-4 text-[11px] text-muted-foreground/60">
+                          <span>{messages.length} message{messages.length !== 1 ? "s" : ""}</span>
+                          <span className="size-1 rounded-full bg-muted-foreground/20" />
+                          <span>{documents.length} document{documents.length !== 1 ? "s" : ""} in scope</span>
+                          {sources.length > 0 && (
+                            <>
+                              <span className="size-1 rounded-full bg-muted-foreground/20" />
+                              <span>{sources.length} source{sources.length !== 1 ? "s" : ""} retrieved</span>
+                            </>
+                          )}
+                          <span className="size-1 rounded-full bg-muted-foreground/20" />
+                          <span>{conversationsTotal} total conversation{conversationsTotal !== 1 ? "s" : ""}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
               )}
@@ -530,7 +572,7 @@ export function ChatView() {
 
                     <form
                       onSubmit={handleSubmit}
-                      className="flex flex-col gap-2 p-3 bg-muted rounded-[24px] shadow-sm transition duration-200"
+                      className="flex flex-col gap-2 p-3 bg-muted rounded-3xl shadow-sm transition duration-200"
                     >
                       <Textarea
                         value={question}
