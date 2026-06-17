@@ -1,27 +1,21 @@
 "use client"
 
-import * as React from "react"
 import { useState, useEffect } from "react"
 import {
   ActivityIcon,
   BarChart3Icon,
-  CheckCircle2Icon,
-  ClockIcon,
   DatabaseIcon,
   FileTextIcon,
   LayersIcon,
   MessageSquareIcon,
   RefreshCwIcon,
-  ServerIcon,
   TrendingUpIcon,
 } from "lucide-react"
 
-import { useAuth } from "@/hooks/use-auth"
 import { useProjects } from "@/hooks/use-projects"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { apiFetch } from "@/lib/api"

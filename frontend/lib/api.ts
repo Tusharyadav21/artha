@@ -139,6 +139,16 @@ async function readErrorDetail(response: Response): Promise<string> {
   return body
 }
 
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string
+  ) {
+    super(message)
+    this.name = "ApiError"
+  }
+}
+
 export async function apiFetch<T>(
   path: string,
   token: string | null,
@@ -158,7 +168,7 @@ export async function apiFetch<T>(
     throw caught
   }
 
-  if (!response.ok) throw new Error(await readErrorDetail(response))
+  if (!response.ok) throw new ApiError(response.status, await readErrorDetail(response))
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
 }

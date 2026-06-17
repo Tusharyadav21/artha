@@ -130,6 +130,9 @@ class DocumentRepository:
         document_ids: list[UUID] | None = None,
         filters: dict | None = None,
     ) -> list[tuple[DocumentChunk, Document, float]]:
+        if document_ids is not None and len(document_ids) == 0:
+            return []
+
         def apply_filters(query):
             query = query.where(
                 Document.project_id == project_id,

@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import { ArrowLeftIcon, FileTextIcon, LibraryIcon, UploadIcon, Trash2Icon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"

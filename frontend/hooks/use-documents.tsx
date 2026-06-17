@@ -105,8 +105,11 @@ export function DocumentsProvider({ children }: React.PropsWithChildren) {
           { method: "POST", body: formData }
         )
         if (targetProjectId === activeProjectId) {
-          setDocuments((current) => [document, ...current])
-          setDocumentsTotal((total) => total + 1)
+          setDocuments((current) => {
+            if (current.some((d) => d.id === document.id)) return current
+            return [document, ...current]
+          })
+          setDocumentsTotal((total) => total) // We'll let polling correct the total if it actually changed
         }
         toast.success(`Uploaded ${file.name}`)
       } catch (caught) {

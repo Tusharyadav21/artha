@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useTheme } from "next-themes"
 
-import { apiFetch, type User, type UserSettingsUpdate } from "@/lib/api"
+import { apiFetch, ApiError, type User, type UserSettingsUpdate } from "@/lib/api"
 import { TOKEN_KEY } from "@/lib/app-storage"
 import { getCookie, removeCookie, setCookie } from "@/lib/cookies"
 import { toast } from "@/components/ui/toast"
@@ -33,20 +33,29 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
   const [isLoadingSession, setIsLoadingSession] = React.useState(Boolean(token))
   const [isSavingSettings, setIsSavingSettings] = React.useState(false)
 
-  const authedFetch = React.useCallback(
-    <T,>(path: string, init?: RequestInit) =>
-      apiFetch<T>(path, token, init),
-    [token]
-  )
-
   const clearSession = React.useCallback(() => {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(TOKEN_KEY)
       removeCookie(TOKEN_KEY)
+      window.location.href = "/"
     }
     setToken(null)
     setUser(null)
   }, [])
+
+  const authedFetch = React.useCallback(
+    async <T,>(path: string, init?: RequestInit) => {
+      try {
+        return await apiFetch<T>(path, token, init)
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          clearSession()
+        }
+        throw error
+      }
+    },
+    [token, clearSession]
+  )
 
   const signOut = React.useCallback(() => {
     clearSession()
@@ -67,7 +76,11 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
       const nextUser = await apiFetch<User>("/api/auth/me", storedToken)
       setUser(nextUser)
     } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : "Could not load account")
+      if (caught instanceof ApiError && caught.status === 401) {
+        toast.error("Session expired, please log in again")
+      } else {
+        toast.error(caught instanceof Error ? caught.message : "Could not load account")
+      }
       clearSession()
     } finally {
       setIsLoadingSession(false)
