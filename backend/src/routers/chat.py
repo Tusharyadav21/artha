@@ -157,14 +157,15 @@ async def chat(
                     node_name = list(chunk.keys())[0]
                     yield _event("node", node_name)
                     rag_state.update(chunk[node_name])
-                yield _event("sources", rag_state["sources"])
+                sources_dict = [s.model_dump() for s in rag_state["sources"]]
+                yield _event("sources", sources_dict)
 
                 _safe_end(
                     rag_span,
                     output={
                         "sources_count": len(rag_state["sources"]),
                         "sources": [
-                            {"filename": s.get("filename"), "score": s.get("score")}
+                            {"filename": s.filename, "score": s.score}
                             for s in rag_state["sources"]
                         ],
                     },
@@ -197,7 +198,7 @@ async def chat(
                     conversation.id,
                     MessageRole.ASSISTANT,
                     content or "I could not generate a response.",
-                    {"sources": rag_state["sources"]},
+                    {"sources": [s.model_dump() for s in rag_state["sources"]]},
                 )
                 yield _event("final", {"message_id": str(message.id), "content": message.content})
 

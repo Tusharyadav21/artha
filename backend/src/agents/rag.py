@@ -187,7 +187,8 @@ def build_rag_graph(db: AsyncSession, llm_client: BaseLLMClient):
         if hyde_text := state.hyde_text:
             embed_text = f"{state.search_query}\n\n{hyde_text}"
 
-        query_embedding = await get_ollama_client().embed(embed_text)
+        ollama_client = await get_ollama_client()
+        query_embedding = await ollama_client.embed(embed_text)
         rows = await DocumentRepository(db).search_chunks(
             state.project_id,
             query_embedding,

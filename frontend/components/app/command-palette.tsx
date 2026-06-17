@@ -3,7 +3,6 @@
 import * as React from "react"
 import {
   SearchIcon,
-  FileTextIcon,
   HistoryIcon,
   FolderIcon,
   UploadIcon,
@@ -12,8 +11,8 @@ import {
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { useProjects } from "@/hooks/use-projects"
 import { useChat } from "@/hooks/use-chat"
-import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { Input } from "../ui/input"
 
 // fallow-ignore-next-line complexity
 export function CommandPalette() {
@@ -47,7 +46,7 @@ export function CommandPalette() {
         <DialogTitle className="sr-only">Command Palette</DialogTitle>
         <div className="flex items-center px-4 py-3 border-b border-border">
           <SearchIcon className="size-5 text-muted-foreground mr-3" />
-          <input
+          <Input
             autoFocus
             type="text"
             placeholder="Search projects, conversations, or run commands..."

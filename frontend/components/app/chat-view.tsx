@@ -6,9 +6,6 @@ import { useSearchParams } from "next/navigation"
 import { useProjects } from "@/hooks/use-projects"
 import { useDocuments } from "@/hooks/use-documents"
 import { useChat } from "@/hooks/use-chat"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/toast"
 import { MAX_UPLOAD_SIZE, ACCEPTED_FILE_TYPES } from "@/lib/constants"
 
@@ -25,7 +22,6 @@ export function ChatView() {
   const { activeProject, activeProjectId, isSavingProject, updateProjectSettings } = useProjects()
   const {
     documents,
-    documentsTotal,
     selectedDocumentIds,
     isUploading,
     toggleDocumentScope,
@@ -58,8 +54,7 @@ export function ChatView() {
 
   const activeInContextDocuments = React.useMemo(() => {
     const completedDocs = documents.filter((doc) => doc.status === "completed")
-    const scoped = completedDocs.filter((doc) => selectedDocumentIds.includes(doc.id))
-    return scoped.length > 0 ? scoped : completedDocs
+    return completedDocs.filter((doc) => selectedDocumentIds.includes(doc.id))
   }, [documents, selectedDocumentIds])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {

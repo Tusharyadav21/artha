@@ -52,9 +52,9 @@ async def process_document(ctx: dict, document_id: str, embed_model: str | None 
 
             final_state = await graph.ainvoke(initial_state)
 
-            document.extracted_metadata = final_state.metadata or {}
+            document.extracted_metadata = final_state.get("metadata") or {}
 
-            embedded_chunks = final_state.embedded_chunks or []
+            embedded_chunks = final_state.get("embedded_chunks") or []
 
             if not embedded_chunks:
                 logger.warning("Document %s: produced no chunks", document_id)

@@ -531,20 +531,25 @@ class CohereClient(_BaseHTTPClient):
 
 class OllamaAdapter(BaseLLMClient):
     def __init__(self, model: str | None = None) -> None:
-        from src.services.ollama import get_ollama_client
-        self._inner = get_ollama_client()
         self._model = model
 
+    async def _get_inner(self):
+        from src.services.ollama import get_ollama_client
+        return await get_ollama_client()
+
     async def generate(self, prompt: str, *, model_name: str | None = None, **kwargs) -> str:
-        return await self._inner.generate(prompt, model_name=model_name or self._model, **kwargs)
+        inner = await self._get_inner()
+        return await inner.generate(prompt, model_name=model_name or self._model, **kwargs)
 
     async def stream_generate(
         self, prompt: str, *, model_name: str | None = None, **kwargs
     ) -> AsyncIterator[str]:
-        async for token in self._inner.stream_generate(
+        inner = await self._get_inner()
+        async for token in inner.stream_generate(
             prompt, model_name=model_name or self._model, **kwargs
         ):
             yield token
 
     async def close(self) -> None:
-        await self._inner.close()
+        inner = await self._get_inner()
+        await inner.close()

@@ -164,7 +164,7 @@ export function ChatProvider({ children }: React.PropsWithChildren) {
         const request: ChatRequest = {
           conversation_id: activeConversationId,
           message: userQuestion,
-          document_ids: hasScopedDocuments ? scopedDocumentIds : null,
+          document_ids: scopedDocumentIds,
         }
 
         await streamChat({
