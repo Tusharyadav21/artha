@@ -1,12 +1,12 @@
 "use client"
 
-import * as React from "react"
 import { useTheme } from "next-themes"
 
 import { apiFetch, ApiError, type User, type UserSettingsUpdate } from "@/lib/api"
 import { TOKEN_KEY } from "@/lib/app-storage"
 import { getCookie, removeCookie, setCookie } from "@/lib/cookies"
 import { toast } from "@/components/ui/toast"
+import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 
 interface AuthContextValue {
   token: string | null
@@ -19,21 +19,21 @@ interface AuthContextValue {
   isSavingSettings: boolean
 }
 
-const AuthContext = React.createContext<AuthContextValue | null>(null)
+const AuthContext = createContext<AuthContextValue | null>(null)
 
 function readStoredToken() {
   if (typeof window === "undefined") return null
   return window.localStorage.getItem(TOKEN_KEY)
 }
 
-export function AuthProvider({ children }: React.PropsWithChildren) {
+export function AuthProvider({ children }: PropsWithChildren) {
   const { setTheme } = useTheme()
-  const [token, setToken] = React.useState<string | null>(readStoredToken)
-  const [user, setUser] = React.useState<User | null>(null)
-  const [isLoadingSession, setIsLoadingSession] = React.useState(Boolean(token))
-  const [isSavingSettings, setIsSavingSettings] = React.useState(false)
+  const [token, setToken] = useState<string | null>(readStoredToken)
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoadingSession, setIsLoadingSession] = useState(Boolean(token))
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
 
-  const clearSession = React.useCallback(() => {
+  const clearSession = useCallback(() => {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(TOKEN_KEY)
       removeCookie(TOKEN_KEY)
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     setUser(null)
   }, [])
 
-  const authedFetch = React.useCallback(
+  const authedFetch = useCallback(
     async <T,>(path: string, init?: RequestInit) => {
       try {
         return await apiFetch<T>(path, token, init)
@@ -57,11 +57,11 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     [token, clearSession]
   )
 
-  const signOut = React.useCallback(() => {
+  const signOut = useCallback(() => {
     clearSession()
   }, [clearSession])
 
-  const refreshSession = React.useCallback(async () => {
+  const refreshSession = useCallback(async () => {
     const storedToken = readStoredToken()
     if (!storedToken) {
       setToken(null)
@@ -87,25 +87,25 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     }
   }, [clearSession])
 
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       void refreshSession()
     }, 0)
     return () => window.clearTimeout(timer)
   }, [refreshSession])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (token && !getCookie(TOKEN_KEY)) {
       setCookie(TOKEN_KEY, token)
     }
   }, [token])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!user?.theme_preference) return
     setTheme(user.theme_preference)
   }, [setTheme, user?.theme_preference])
 
-  const updateUserSettings = React.useCallback(
+  const updateUserSettings = useCallback(
     async (updates: UserSettingsUpdate) => {
       if (!token) return null
 
@@ -132,7 +132,7 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     [authedFetch, setTheme, token]
   )
 
-  const value = React.useMemo<AuthContextValue>(
+  const value = useMemo<AuthContextValue>(
     () => ({
       token,
       user,
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
 }
 
 export function useAuth() {
-  const value = React.useContext(AuthContext)
+  const value = useContext(AuthContext)
   if (!value) throw new Error("useAuth must be used inside AuthProvider")
   return value
 }

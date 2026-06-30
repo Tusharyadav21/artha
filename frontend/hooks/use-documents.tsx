@@ -1,7 +1,6 @@
 "use client"
 
-import * as React from "react"
-
+import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { useProjects } from "@/hooks/use-projects"
 import { type DocumentItem, type PaginatedResponse } from "@/lib/api"
@@ -25,17 +24,17 @@ interface DocumentsContextValue {
   listProjectDocuments: (projectId: string) => Promise<DocumentItem[]>
 }
 
-const DocumentsContext = React.createContext<DocumentsContextValue | null>(null)
+const DocumentsContext = createContext<DocumentsContextValue | null>(null)
 
-export function DocumentsProvider({ children }: React.PropsWithChildren) {
+export function DocumentsProvider({ children }: PropsWithChildren) {
   const { authedFetch } = useAuth()
   const { activeProjectId } = useProjects()
 
-  const [documents, setDocuments] = React.useState<DocumentItem[]>([])
-  const [documentsTotal, setDocumentsTotal] = React.useState(0)
-  const [selectedDocumentIds, setSelectedDocumentIds] = React.useState<string[]>([])
-  const [isUploading, setIsUploading] = React.useState(false)
-  const [isLoadingMoreDocs, setIsLoadingMoreDocs] = React.useState(false)
+  const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [documentsTotal, setDocumentsTotal] = useState(0)
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const [isLoadingMoreDocs, setIsLoadingMoreDocs] = useState(false)
 
   const completedDocumentIds = new Set(
     documents.filter((d) => d.status === "completed").map((d) => d.id)
@@ -43,7 +42,7 @@ export function DocumentsProvider({ children }: React.PropsWithChildren) {
   const scopedDocumentIds = selectedDocumentIds.filter((id) => completedDocumentIds.has(id))
   const hasScopedDocuments = scopedDocumentIds.length > 0
 
-  const loadDocuments = React.useCallback(
+  const loadDocuments = useCallback(
     async (projectId: string, skip = 0) => {
       const response = await authedFetch<PaginatedResponse<DocumentItem>>(
         `/api/projects/${projectId}/documents?skip=${skip}&limit=${PAGE_SIZE}`
@@ -59,16 +58,18 @@ export function DocumentsProvider({ children }: React.PropsWithChildren) {
     [authedFetch]
   )
 
-  React.useEffect(() => {
-    if (!activeProjectId) {
-      setDocuments([])
-      setDocumentsTotal(0)
-      return
+  useEffect(() => {
+    if (activeProjectId) {
+      authedFetch<PaginatedResponse<DocumentItem>>(
+        `/api/projects/${activeProjectId}/documents?skip=0&limit=${PAGE_SIZE}`
+      ).then(response => {
+        setDocuments(response.items)
+        setDocumentsTotal(response.total)
+      })
     }
-    void loadDocuments(activeProjectId)
-  }, [activeProjectId, loadDocuments])
+  }, [activeProjectId, authedFetch])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!activeProjectId) return
 
     const hasProcessing = documents.some(
@@ -91,7 +92,7 @@ export function DocumentsProvider({ children }: React.PropsWithChildren) {
     return () => window.clearInterval(interval)
   }, [activeProjectId, authedFetch, documents])
 
-  const uploadDocument = React.useCallback(
+  const uploadDocument = useCallback(
     async (file: File, projectId?: string) => {
       const targetProjectId = projectId || activeProjectId
       if (!targetProjectId) return
@@ -121,7 +122,7 @@ export function DocumentsProvider({ children }: React.PropsWithChildren) {
     [activeProjectId, authedFetch]
   )
 
-  const deleteDocument = React.useCallback(
+  const deleteDocument = useCallback(
     async (documentId: string) => {
       if (!activeProjectId) return
 
@@ -141,18 +142,18 @@ export function DocumentsProvider({ children }: React.PropsWithChildren) {
     [activeProjectId, authedFetch]
   )
 
-  const toggleDocumentScope = React.useCallback((documentId: string) => {
+  const toggleDocumentScope = useCallback((documentId: string) => {
     setSelectedDocumentIds((current) => {
       if (current.includes(documentId)) return current.filter((id) => id !== documentId)
       return [...current, documentId]
     })
   }, [])
 
-  const clearDocumentScope = React.useCallback(() => {
+  const clearDocumentScope = useCallback(() => {
     setSelectedDocumentIds([])
   }, [])
 
-  const loadMoreDocuments = React.useCallback(async () => {
+  const loadMoreDocuments = useCallback(async () => {
     if (!activeProjectId || documents.length >= documentsTotal) return
 
     setIsLoadingMoreDocs(true)
@@ -165,7 +166,7 @@ export function DocumentsProvider({ children }: React.PropsWithChildren) {
     }
   }, [activeProjectId, documents.length, documentsTotal, loadDocuments])
 
-  const listProjectDocuments = React.useCallback(
+  const listProjectDocuments = useCallback(
     async (projectId: string) => {
       const response = await authedFetch<PaginatedResponse<DocumentItem>>(
         `/api/projects/${projectId}/documents?skip=0&limit=100`
@@ -175,7 +176,7 @@ export function DocumentsProvider({ children }: React.PropsWithChildren) {
     [authedFetch]
   )
 
-  const value = React.useMemo<DocumentsContextValue>(
+  const value = useMemo<DocumentsContextValue>(
     () => ({
       documents,
       documentsTotal,
@@ -212,7 +213,7 @@ export function DocumentsProvider({ children }: React.PropsWithChildren) {
 }
 
 export function useDocuments() {
-  const value = React.useContext(DocumentsContext)
+  const value = useContext(DocumentsContext)
   if (!value) throw new Error("useDocuments must be used inside DocumentsProvider")
   return value
 }

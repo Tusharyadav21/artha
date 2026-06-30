@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import { motion } from "framer-motion"
 import { Logo } from "@/components/shared/logo"
 import { Button } from "@/components/ui/button"

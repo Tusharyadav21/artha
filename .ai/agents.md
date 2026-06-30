@@ -23,49 +23,74 @@ builder.add_edge("retrieve", "generate")
 graph = builder.compile()
 ```
 
+Pattern: module-level singletons for expensive clients (OllamaClient, Reranker) wrapped in `_get_*()` with `asyncio.Lock` double-checked locking.
+
 ---
 
 ## 2. RAG Pipeline (`agents/rag.py`)
 
-Two entry points:
-- `prepare_rag_context(state)` — retrieval + prompt composition (non-streaming)
+### Graph Topology
+
+```
+analyze_query → retrieve (RRF) → rerank (cross-encoder) → quality_gate
+                                                              ├─ pass → compress → compose_prompt → generate
+                                                              └─ fail + HyDE eligible → hyde_expand → retrieve (retry)
+```
+
+### Entry Points
+- `prepare_rag_context(state)` — retrieval + prompt composition (non-streaming, returns structured context)
 - `stream_rag_response(state)` — streaming generation from Ollama
 
 ### Nodes
+
 | Node | Responsibility |
 |---|---|
-| `retrieve` | Embed question, vector search `document_chunks`, rerank top-6 candidates |
-| `compose_prompt` | Format context with cited sources `[1]..[N]`, inject conversation history |
+| `analyze_query` | Classify intent (question, command, chit-chat); detect language |
+| `retrieve` | Embed question → hybrid RRF search (cosine + trigram + BM25) → top-20 candidates |
+| `rerank` | Cross-encoder re-scores top-20; selects top-3 |
+| `quality_gate` | Threshold check (`relevance_threshold=0.05`); routes to HyDE or fallback |
+| `hyde_expand` | Generate hypothetical document via LLM → re-embed → re-retrieve |
+| `compress` | Sentence-level extraction from matched chunks for context window efficiency |
+| `compose_prompt` | Format cited context `[1]..[N]`, inject conversation history, system prompt |
 | `generate` | Stream tokens from Ollama via `stream_generate` |
 
 ### State Fields
 - `question: str` — user input
 - `conversation_id: UUID` — for history injection
-- `sources: list[DocumentChunkRead]` — retrieved chunks
-- `prompt: str` — composed LLM prompt with citations
+- `project_id: UUID` — document scope for retrieval
+- `sources: list[DocumentChunkRead]` — retrieved + reranked chunks
+- `prompt: str` — composed LLM prompt with `[1]..[N]` citations
 - `response: str` — accumulated streamed response
 
-### Patterns
-- Use **module-level singletons** for expensive clients (OllamaClient) — wrap in `_get_ollama_client()` with `asyncio.Lock`
-- Conversation history is injected as `list[dict]` with `{"role": "...", "content": "..."}` format
-- All thresholds (relevance, history length) come from `core.config.settings`
-- Sources are deduplicated by `chunk_id` before prompt composition
+### Key Patterns
+- **Hybrid search (RRF):** Three legs — vector cosine (1024d), trigram (pg_trgm), BM25 (pg_bm25). Fused via RRF with k=60.
+- **History injection:** Last N messages injected as `{"role": "...", "content": "..."}`. Summarize when `len(history) > settings.history_summarize_at`.
+- **Source deduplication:** By `chunk_id` before prompt composition.
+- **All thresholds** come from `core.config.settings`.
 
 ---
 
 ## 3. Ingestion Pipeline (`agents/ingestion.py`)
 
-One entry point:
-- `ingest_document(state)` — full parsing → chunking → embedding flow
+### Graph Topology
+
+```
+parse_document → extract_metadata → caption_images → chunk_text → embed_chunks → save_chunks
+```
+
+### Entry Point
+- `ingest_document(state)` — full parsing → chunking → embedding → persistence flow
 
 ### Nodes
+
 | Node | Responsibility |
 |---|---|
-| `parse` | Convert raw bytes to text via MarkItDown |
-| `extract_metadata` | LLM call to extract title, summary, author |
-| `chunk` | Hierarchical sentence-packed chunking |
-| `embed` | Generate embeddings for each chunk via OllamaClient |
-| `save` | Persist chunks via DocumentRepository |
+| `parse_document` | Convert raw bytes to text via MarkItDown (supports PDF, DOCX, PPTX, XLSX, images, HTML, CSV, JSON, Markdown) |
+| `extract_metadata` | LLM call to extract title, summary, tags, author |
+| `caption_images` | Vision LLM call to generate alt-text for embedded images |
+| `chunk_text` | Hierarchical sentence-packed chunking (80-word children, 320-word parents) |
+| `embed_chunks` | Generate enriched embeddings: for each chunk, LLM creates 3 hypothetical questions + summary, concatenates with content, embeds via OllamaClient |
+| `save_chunks` | Persist chunks via DocumentRepository (DELETE existing + INSERT new) |
 
 ### State Fields
 - `document_id: UUID`
@@ -75,25 +100,29 @@ One entry point:
 - `chunks: list[dict] = []`
 - `error: str | None = None`
 
-### Patterns
-- Each node catches exceptions and sets `state.error` — the graph routes to an `error_handler` node on failure
-- Embedding is retried per-chunk with exponential backoff via `tenacity`
-- Metadata extraction has a 30-second timeout (`asyncio.wait_for`)
-- Chunk sizes are controlled by `settings.ingestion_max_chunk_tokens`
+### Key Patterns
+- **Error handling:** Each node catches exceptions and sets `state.error` — graph routes to `error_handler` node on failure.
+- **Retry:** Embedding retried per-chunk with exponential backoff via `tenacity`.
+- **Timeouts:** Metadata extraction has 30s timeout (`asyncio.wait_for`).
+- **Semaphore:** `ingestion_semaphore_limit=3` concurrent LLM calls to avoid Ollama overload.
+- **Hierarchical chunking:** `chunk_child_words=80`, `chunk_parent_words=320`. Sentences never split mid-way. Parent context injected at retrieval time when a child chunk matches.
 
 ---
 
 ## 4. Safety & Quality Gates
 
-- **Retrieval threshold**: Skip chunks below `settings.relevance_threshold` (cosine similarity)
-- **Reranking**: Cross-encoder reranks top-6 candidates; final prompt uses top-3 after reranking
-- **History window**: Summarize when `len(history) > settings.history_summarize_at`; keep last `settings.history_keep_recent` messages
-- **HyDE fallback**: If initial retrieval returns < 2 chunks, generate hypothetical document via LLM and re-embed
+| Gate | Threshold | Behavior on Failure |
+|---|---|---|
+| Reranker relevance | `relevance_threshold=0.05` | HyDE fallback (if answerable) or "I don't know" |
+| History window | `history_summarize_at=10` | Summarize middle messages, keep last N recent |
+| Retrieval minimum | < 2 chunks after gate | Trigger HyDE expansion; if still insufficient → "not found" |
+| Source citation | Missing chunk_id in source | Log warning, skip un-citable segment |
 
 ---
 
 ## 5. Langfuse Tracing
 
-- All graph invocations are wrapped with `langfuse_context.trace()` decorator
-- Token counts and latency are logged per-node
-- Retrieval quality metrics (hit rate, MRR) are computed in post-processing
+- All graph invocations wrapped with `langfuse_context.trace()` decorator
+- Token counts and latency logged per-node
+- Retrieval quality metrics (hit rate, MRR) computed in post-processing
+- Available at `localhost:3001` when Docker Compose stack is running

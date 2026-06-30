@@ -112,6 +112,63 @@ export interface FeedbackRequest {
   comment?: string | null
 }
 
+// ============================================================================
+// PLATFORM ENTITIES (Agent OS)
+// ============================================================================
+
+export interface ModelRegistry {
+  id: string
+  workspace_id: string
+  name: string
+  provider: string
+  model_name: string
+  base_url: string | null
+  context_window: number | null
+  supports_tools: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PromptTemplate {
+  id: string
+  workspace_id: string
+  name: string
+  version: string
+  template_text: string
+  model_id: string | null
+  temperature: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Tool {
+  id: string
+  workspace_id: string
+  name: string
+  description: string | null
+  endpoint_url: string | null
+  auth_type: "NONE" | "API_KEY" | "MCP"
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Agent {
+  id: string
+  workspace_id: string
+  name: string
+  description: string | null
+  routing_description: string | null
+  workflow_definition: Record<string, unknown>
+  version: string
+  is_active: boolean
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 function getNetworkErrorMessage(): string {
   const origin = typeof window === "undefined" ? "" : ` from ${window.location.origin}`
   return `Could not reach API at ${API_URL}${origin}. Make sure the backend is running and that CORS allows this frontend origin.`
@@ -184,8 +241,8 @@ export interface OllamaSettings {
 
 export const DEFAULT_OLLAMA_SETTINGS: OllamaSettings = {
   mode: "local",
-  localModel: "gemma4:e4b",
-  cloudModel: "gemma4:31b-cloud",
+localModel: "qwen2.5:7b",
+cloudModel: "qwen2.5:72b",
   embedModel: "nomic-embed-text",
   numCtx: 4096,
   numPredict: 512,

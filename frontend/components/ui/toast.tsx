@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useEffect, useState } from "react"
 import { CircleAlertIcon, CircleCheckIcon, XIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -59,9 +59,9 @@ function toneClasses(tone: ToastTone) {
 }
 
 export function Toaster() {
-  const [items, setItems] = React.useState<ToastMessage[]>([])
+  const [items, setItems] = useState<ToastMessage[]>([])
 
-  React.useEffect(() => {
+  useEffect(() => {
     function onToast(item: ToastMessage) {
       setItems((current) => [...current, item])
     }
@@ -73,7 +73,7 @@ export function Toaster() {
     }
   }, [])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!items.length) {
       return
     }

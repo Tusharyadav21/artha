@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { memo } from "react"
 import {
   LogOutIcon,
   SettingsIcon,
@@ -32,7 +32,7 @@ const themeOptions = [
   { value: "system" as const, label: "System", Icon: MonitorIcon },
 ]
 
-const SidebarUserMenu = React.memo(function SidebarUserMenu({
+const SidebarUserMenu = memo(function SidebarUserMenu({
   isCollapsed,
 }: {
   isCollapsed: boolean
@@ -55,7 +55,7 @@ const SidebarUserMenu = React.memo(function SidebarUserMenu({
           )}
         >
           <Avatar className="size-9 ring-1 ring-white/10 shrink-0 cursor-pointer">
-            <AvatarFallback className="bg-gradient-to-tr from-emerald-600 to-green-500 text-white font-bold text-xs select-none">
+            <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xs select-none">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -80,7 +80,7 @@ const SidebarUserMenu = React.memo(function SidebarUserMenu({
       >
         <div className="flex items-center gap-3 px-3 py-2">
           <Avatar className="size-8 shrink-0">
-            <AvatarFallback className="bg-gradient-to-tr from-emerald-600 to-green-500 text-white font-bold text-xs">
+            <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xs">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -134,7 +134,7 @@ const SidebarUserMenu = React.memo(function SidebarUserMenu({
 
         <DropdownMenuItem
           onClick={signOut}
-          className="gap-2 text-muted-foreground hover:text-red-400 focus:text-red-400"
+          className="gap-2 text-muted-foreground hover:text-status-danger focus:text-status-danger"
         >
           <LogOutIcon className="size-4" />
           <span>Sign out</span>

@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/hooks/use-auth"
@@ -10,7 +10,7 @@ import { ChatDefaultsForm } from "@/components/settings/chat-defaults-form"
 
 export function SettingsView() {
   const { user, isSavingSettings, updateUserSettings } = useAuth()
-  const [activeTab, setActiveTab] = React.useState("profile")
+  const [activeTab, setActiveTab] = useState("profile")
 
   return (
     <div className="flex h-full flex-col overflow-y-auto px-6 py-5">

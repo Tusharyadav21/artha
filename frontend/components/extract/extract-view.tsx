@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import { useState } from "react"
 import { ImageIcon, FileTextIcon } from "lucide-react"
 import { ImageToTextTab } from "@/components/extract/image-to-text-tab"

@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useState } from "react"
 import { SaveIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -14,8 +14,8 @@ interface ChatDefaultsFormProps {
 }
 
 export function ChatDefaultsForm({ defaultHomeTab, defaultScopeMode, isSavingSettings, onSave }: ChatDefaultsFormProps) {
-  const [homeTab, setHomeTab] = React.useState(defaultHomeTab)
-  const [scopeMode, setScopeMode] = React.useState(defaultScopeMode)
+  const [homeTab, setHomeTab] = useState(defaultHomeTab)
+  const [scopeMode, setScopeMode] = useState(defaultScopeMode)
 
   return (
     <form

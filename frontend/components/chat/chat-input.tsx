@@ -1,7 +1,7 @@
 "use client"
 
-import * as React from "react"
-import { ArrowUpIcon, GlobeIcon, LibraryIcon, Loader2Icon, SparklesIcon } from "lucide-react"
+import { FormEvent, forwardRef } from "react"
+import { ArrowUpIcon, GlobeIcon, LibraryIcon } from "lucide-react"
 
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 interface ChatInputProps {
   question: string
   onQuestionChange: (value: string) => void
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void
   onLibraryClick: () => void
   isStreaming: boolean
   isLoadingMessages: boolean
@@ -20,7 +20,7 @@ interface ChatInputProps {
   onWebSearchToggle: () => void
 }
 
-export const ChatInput = React.forwardRef<HTMLFormElement, ChatInputProps>(
+export const ChatInput = forwardRef<HTMLFormElement, ChatInputProps>(
   function ChatInput({
     question,
     onQuestionChange,

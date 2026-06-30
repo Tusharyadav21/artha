@@ -1,0 +1,446 @@
+{
+  "schemaVersion": 3,
+  "generatedAt": "2026-06-30T00:00:00Z",
+  "title": "Artha AI Platform Design System",
+  "foundation": {
+    "colors": {
+      "neutral": {
+        "0": "oklch(1 0 0)",
+        "25": "oklch(0.99 0 0)",
+        "50": "oklch(0.97 0 0)",
+        "100": "oklch(0.93 0 0)",
+        "150": "oklch(0.89 0 0)",
+        "200": "oklch(0.85 0 0)",
+        "300": "oklch(0.75 0 0)",
+        "400": "oklch(0.65 0 0)",
+        "500": "oklch(0.55 0 0)",
+        "600": "oklch(0.45 0 0)",
+        "700": "oklch(0.35 0 0)",
+        "800": "oklch(0.25 0 0)",
+        "900": "oklch(0.15 0 0)",
+        "950": "oklch(0.10 0 0)"
+      },
+      "brand": {
+        "50": "oklch(0.98 0.04 150)",
+        "100": "oklch(0.94 0.06 150)",
+        "200": "oklch(0.88 0.08 150)",
+        "300": "oklch(0.80 0.10 150)",
+        "400": "oklch(0.70 0.12 150)",
+        "500": "oklch(0.60 0.14 150)",
+        "600": "oklch(0.52 0.15 150)",
+        "700": "oklch(0.45 0.13 150)",
+        "800": "oklch(0.35 0.10 150)",
+        "900": "oklch(0.25 0.08 150)",
+        "950": "oklch(0.15 0.05 150)"
+      },
+      "status": {
+        "success": "oklch(0.65 0.15 150)",
+        "warning": "oklch(0.75 0.15 75)",
+        "danger": "oklch(0.60 0.18 25)",
+        "info": "oklch(0.65 0.15 250)",
+        "accent": "oklch(0.52 0.15 150)",
+        "selection": "oklch(0.92 0.04 250)",
+        "focus": "oklch(0.65 0.15 150)",
+        "visitedLink": "oklch(0.55 0.15 300)",
+        "disabled": "oklch(0.85 0 0)"
+      }
+    },
+    "typography": {
+      "displayXl": {
+        "fontSize": "72px",
+        "lineHeight": "1.1",
+        "letterSpacing": "-0.04em",
+        "fontWeight": "700"
+      },
+      "displayL": {
+        "fontSize": "60px",
+        "lineHeight": "1.1",
+        "letterSpacing": "-0.03em",
+        "fontWeight": "700"
+      },
+      "headingXl": {
+        "fontSize": "48px",
+        "lineHeight": "1.2",
+        "letterSpacing": "-0.02em",
+        "fontWeight": "600"
+      },
+      "headingL": {
+        "fontSize": "36px",
+        "lineHeight": "1.2",
+        "letterSpacing": "-0.02em",
+        "fontWeight": "600"
+      },
+      "headingM": {
+        "fontSize": "24px",
+        "lineHeight": "1.3",
+        "letterSpacing": "-0.01em",
+        "fontWeight": "600"
+      },
+      "title": {
+        "fontSize": "20px",
+        "lineHeight": "1.4",
+        "letterSpacing": "0",
+        "fontWeight": "600"
+      },
+      "bodyLarge": {
+        "fontSize": "18px",
+        "lineHeight": "1.6",
+        "letterSpacing": "0",
+        "fontWeight": "400",
+        "maxWidth": "72ch"
+      },
+      "body": {
+        "fontSize": "15px",
+        "lineHeight": "1.6",
+        "letterSpacing": "0",
+        "fontWeight": "400",
+        "maxWidth": "72ch"
+      },
+      "bodySmall": {
+        "fontSize": "13px",
+        "lineHeight": "1.5",
+        "letterSpacing": "0.01em",
+        "fontWeight": "400"
+      },
+      "caption": {
+        "fontSize": "11px",
+        "lineHeight": "1.4",
+        "letterSpacing": "0.02em",
+        "fontWeight": "500"
+      },
+      "overline": {
+        "fontSize": "10px",
+        "lineHeight": "1.4",
+        "letterSpacing": "0.05em",
+        "fontWeight": "600",
+        "textTransform": "uppercase"
+      },
+      "mono": {
+        "fontFamily": "monospace",
+        "fontSize": "13px",
+        "lineHeight": "1.5",
+        "letterSpacing": "0"
+      }
+    },
+    "spacing": {
+      "0": "0px",
+      "2": "2px",
+      "4": "4px",
+      "6": "6px",
+      "8": "8px",
+      "12": "12px",
+      "16": "16px",
+      "20": "20px",
+      "24": "24px",
+      "32": "32px",
+      "40": "40px",
+      "48": "48px",
+      "56": "56px",
+      "64": "64px",
+      "80": "80px",
+      "96": "96px",
+      "128": "128px"
+    },
+    "radius": {
+      "none": "0px",
+      "xs": "2px",
+      "sm": "4px",
+      "md": "6px",
+      "lg": "8px",
+      "xl": "12px",
+      "2xl": "16px",
+      "full": "9999px"
+    },
+    "borders": {
+      "none": "0",
+      "hairline": "0.5px",
+      "1": "1px",
+      "2": "2px",
+      "focus": "3px",
+      "divider": "1px"
+    },
+    "elevation": {
+      "surface": {
+        "background": "theme.surface",
+        "border": "theme.border",
+        "shadow": "none"
+      },
+      "card": {
+        "background": "theme.surface",
+        "border": "theme.border",
+        "shadow": "0 1px 2px rgba(0,0,0,0.05)"
+      },
+      "popover": {
+        "background": "theme.surfaceElevated",
+        "border": "theme.border",
+        "shadow": "0 4px 6px rgba(0,0,0,0.1)"
+      },
+      "dialog": {
+        "background": "theme.surfaceElevated",
+        "border": "theme.border",
+        "shadow": "0 10px 15px rgba(0,0,0,0.15)"
+      },
+      "commandPalette": {
+        "background": "theme.surfaceElevated",
+        "border": "theme.borderStrong",
+        "shadow": "0 20px 25px rgba(0,0,0,0.2)"
+      },
+      "dropdown": {
+        "background": "theme.surfaceElevated",
+        "border": "theme.border",
+        "shadow": "0 4px 6px rgba(0,0,0,0.1)"
+      },
+      "toast": {
+        "background": "theme.surfaceElevated",
+        "border": "theme.borderStrong",
+        "shadow": "0 10px 15px rgba(0,0,0,0.15)"
+      }
+    },
+    "motion": {
+      "duration": {
+        "fast": "150ms",
+        "normal": "200ms",
+        "slow": "400ms"
+      },
+      "ease": {
+        "ease": "ease",
+        "easeIn": "cubic-bezier(0.4, 0, 1, 1)",
+        "easeOut": "cubic-bezier(0, 0, 0.2, 1)",
+        "easeInOut": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "spring": "cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+      }
+    },
+    "layout": {
+      "navigationHeight": "56px",
+      "toolbarHeight": "40px",
+      "sidebarWidth": "240px",
+      "inspectorWidth": "320px",
+      "containerWidth": "1280px",
+      "readingWidth": "72ch",
+      "panelWidth": "400px",
+      "chatWidth": "800px",
+      "dialogWidth": "600px",
+      "maxFormWidth": "480px"
+    },
+    "zIndex": {
+      "base": 0,
+      "sticky": 100,
+      "dropdown": 200,
+      "popover": 300,
+      "dialog": 400,
+      "toast": 500,
+      "tooltip": 600,
+      "modal": 700,
+      "fullscreen": 800
+    },
+    "iconography": {
+      "library": "Lucide Icons",
+      "strokeWidth": "1.75px",
+      "sizes": [
+        16,
+        20,
+        24,
+        32
+      ],
+      "style": "Outlined",
+      "cornerRadius": "Consistent with UI geometry"
+    }
+  },
+  "semanticTokens": {
+    "light": {
+      "background": "foundation.colors.neutral.0",
+      "surface": "foundation.colors.neutral.25",
+      "surfaceElevated": "foundation.colors.neutral.0",
+      "sidebar": "foundation.colors.neutral.50",
+      "navigation": "foundation.colors.neutral.0",
+      "popover": "foundation.colors.neutral.0",
+      "dialog": "foundation.colors.neutral.0",
+      "tooltip": "foundation.colors.neutral.900",
+      "overlay": "rgba(0,0,0,0.4)",
+      "text": "foundation.colors.neutral.950",
+      "mutedText": "foundation.colors.neutral.500",
+      "border": "foundation.colors.neutral.200",
+      "borderStrong": "foundation.colors.neutral.300",
+      "primary": "foundation.colors.brand.600",
+      "primaryHover": "foundation.colors.brand.700",
+      "focusRing": "foundation.colors.brand.500",
+      "selection": "foundation.colors.status.selection"
+    },
+    "dark": {
+      "background": "foundation.colors.neutral.950",
+      "surface": "foundation.colors.neutral.900",
+      "surfaceElevated": "foundation.colors.neutral.800",
+      "sidebar": "foundation.colors.neutral.900",
+      "navigation": "foundation.colors.neutral.950",
+      "popover": "foundation.colors.neutral.800",
+      "dialog": "foundation.colors.neutral.800",
+      "tooltip": "foundation.colors.neutral.100",
+      "overlay": "rgba(0,0,0,0.6)",
+      "text": "foundation.colors.neutral.50",
+      "mutedText": "foundation.colors.neutral.400",
+      "border": "foundation.colors.neutral.800",
+      "borderStrong": "foundation.colors.neutral.700",
+      "primary": "foundation.colors.brand.500",
+      "primaryHover": "foundation.colors.brand.400",
+      "focusRing": "foundation.colors.brand.500",
+      "selection": "foundation.colors.status.selection"
+    }
+  },
+  "componentTokens": {
+    "states": [
+      "Default",
+      "Hover",
+      "Pressed",
+      "Focused",
+      "Disabled",
+      "Loading",
+      "Selected",
+      "Error",
+      "Success"
+    ]
+  },
+  "components": {
+    "Navigation": [
+      "Sidebar",
+      "Tabs",
+      "Breadcrumbs",
+      "Tree View",
+      "Pagination",
+      "Menu",
+      "Context Menu"
+    ],
+    "Forms": [
+      "Input",
+      "Textarea",
+      "Number",
+      "OTP",
+      "Password",
+      "Checkbox",
+      "Radio",
+      "Switch",
+      "Slider",
+      "Date Picker",
+      "Time Picker",
+      "Select",
+      "Autocomplete",
+      "Combobox",
+      "Tags Input",
+      "File Upload"
+    ],
+    "DataDisplay": [
+      "Table",
+      "Data Grid",
+      "Code Block",
+      "Markdown",
+      "Timeline",
+      "Activity Feed",
+      "JSON Viewer",
+      "Logs Viewer",
+      "Key Value List"
+    ],
+    "Feedback": [
+      "Toast",
+      "Alert",
+      "Banner",
+      "Empty State",
+      "Skeleton",
+      "Progress",
+      "Spinner",
+      "Error State"
+    ],
+    "Overlays": [
+      "Modal",
+      "Popover",
+      "Tooltip",
+      "Drawer",
+      "Command Palette"
+    ],
+    "AIComponents": [
+      "Prompt Editor",
+      "Message Bubble",
+      "Reasoning Block",
+      "Thinking Indicator",
+      "Streaming Cursor",
+      "Tool Call Card",
+      "Artifact Card",
+      "Citation Card",
+      "Model Selector",
+      "Token Counter",
+      "Conversation Timeline",
+      "Workflow Graph",
+      "Execution Logs",
+      "Trace Viewer",
+      "Memory Viewer",
+      "Knowledge Source Card",
+      "RAG Citation",
+      "Agent Status",
+      "Execution Step",
+      "Terminal Output",
+      "Code Diff",
+      "Approval Card"
+    ]
+  },
+  "accessibility": {
+    "contrast": "AA Contrast Minimum",
+    "navigation": "Full Keyboard Navigation support",
+    "screenReaders": "Aria attributes and screen reader support",
+    "motion": "Respect prefers-reduced-motion",
+    "touchTargets": "Minimum 44px for touch interfaces",
+    "focus": "Visible focus states for all interactive elements",
+    "contrastMode": "High Contrast Mode support",
+    "charts": "Color Blind Safe Charts"
+  },
+  "patterns": {
+    "responsiveRules": {
+      "mobile": "< 640px",
+      "tablet": "640px - 1024px",
+      "desktop": "1024px - 1536px",
+      "ultraWide": "> 1536px"
+    },
+    "aiSpecificUXRules": [
+      "Streaming should never shift layout.",
+      "Tool execution always visible.",
+      "Reasoning is collapsible.",
+      "Every AI response exposes citations.",
+      "Long generations stream incrementally.",
+      "Failures explain why.",
+      "Model switching is one click.",
+      "Prompt history preserved.",
+      "User edits never lost.",
+      "Background jobs survive refresh."
+    ]
+  },
+  "principles": {
+    "designConstraints": [
+      "Never use gradients on UI controls.",
+      "Maximum 3 surface levels.",
+      "Maximum 2 border styles.",
+      "One primary accent.",
+      "Never rely on color alone.",
+      "Icons never communicate state without text.",
+      "Maximum reading width 72ch.",
+      "No nested cards.",
+      "No floating action buttons.",
+      "Avoid icon-only actions unless universally understood.",
+      "Whitespace is hierarchy, not decoration."
+    ],
+    "engineeringConstraints": [
+      "Components are built from design tokens only.",
+      "No hardcoded hex colors.",
+      "No hardcoded spacing values.",
+      "No hardcoded border radius.",
+      "Animations use motion tokens only.",
+      "Every component supports light and dark mode.",
+      "Every component supports keyboard navigation.",
+      "Every component has automated visual regression tests.",
+      "Every component includes accessibility tests."
+    ],
+    "chartsAndDataVisualization": {
+      "categoricalPalette": "Distinct from brand color",
+      "sequentialAndDiverging": "Defined",
+      "gridlinesAndLabels": "Standardized",
+      "colorBlindSafe": "Default",
+      "rules": "Strict rules for density and annotation"
+    }
+  }
+}

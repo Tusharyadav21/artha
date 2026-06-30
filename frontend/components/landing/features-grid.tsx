@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import { motion } from "framer-motion"
 import {
   Zap,
@@ -11,6 +10,7 @@ import {
   Lock,
 } from "lucide-react"
 import { SectionHeader } from "./section-header"
+import { revealContainer, revealItem } from "@/lib/motion"
 
 const features = [
   {
@@ -46,23 +46,6 @@ const features = [
 ]
 
 export function FeaturesGrid() {
-  const containerVariants = {
-    visible: {
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 24 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.8 },
-    },
-  }
-
   return (
     <section id="features" className="relative px-6 py-20 lg:px-8">
       <div className="mx-auto max-w-6xl">
@@ -72,7 +55,7 @@ export function FeaturesGrid() {
         />
 
         <motion.div
-          variants={containerVariants}
+          variants={revealContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
@@ -83,11 +66,10 @@ export function FeaturesGrid() {
             return (
               <motion.div
                 key={index}
-                variants={itemVariants}
+                variants={revealItem}
                 className="group relative rounded-xl border border-border/50 bg-card/50 p-8 backdrop-blur transition-all hover:border-primary/50 hover:bg-card/80"
               >
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                <div className="relative z-10">
+                <div className="relative">
                   <Icon className="h-6 w-6 text-primary" />
                   <h3 className="mt-4 font-semibold text-foreground">{feature.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">{feature.description}</p>

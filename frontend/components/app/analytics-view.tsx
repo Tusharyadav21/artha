@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import {
   ActivityIcon,
   BarChart3Icon,
@@ -12,7 +12,6 @@ import {
   TrendingUpIcon,
 } from "lucide-react"
 
-import { useProjects } from "@/hooks/use-projects"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent } from "@/components/ui/card"
@@ -35,7 +34,6 @@ interface UserAnalytics {
 }
 
 export function AnalyticsView() {
-  const { activeProjectId } = useProjects()
   const [data, setData] = useState<UserAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -44,20 +42,19 @@ export function AnalyticsView() {
     return window.localStorage.getItem(TOKEN_KEY)
   }
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = () => {
     setLoading(true)
-    try {
-      const result = await apiFetch<UserAnalytics>("/api/analytics/user", getToken())
-      setData(result)
-    } catch (err) {
-      console.error("Failed to fetch analytics:", err)
-    } finally {
-      setLoading(false)
-    }
+    apiFetch<UserAnalytics>("/api/analytics/user", getToken())
+      .then((result) => setData(result))
+      .catch((err) => console.error("Failed to fetch analytics:", err))
+      .finally(() => setLoading(false))
   }
 
   useEffect(() => {
-    fetchAnalytics()
+    apiFetch<UserAnalytics>("/api/analytics/user", getToken())
+      .then((result) => setData(result))
+      .catch((err) => console.error("Failed to fetch analytics:", err))
+      .finally(() => setLoading(false))
   }, [])
 
   const totalQueries = data?.total_messages ?? 0

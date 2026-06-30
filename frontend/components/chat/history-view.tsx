@@ -1,13 +1,13 @@
 "use client"
 
-import * as React from "react"
+import { useMemo } from "react"
 import { HistoryIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { formatRelativeDate } from "@/components/chat/message-utils"
+import { Button } from "../ui/button"
 
 interface Conversation {
   id: string
@@ -31,7 +31,7 @@ export function HistoryView({
   onOpenConversation,
   onNavigateToChat,
 }: HistoryViewProps) {
-  const filtered = React.useMemo(() => {
+  const filtered = useMemo(() => {
     if (!searchQuery.trim()) return conversations
     return conversations.filter((c) =>
       (c.title || "Untitled conversation").toLowerCase().includes(searchQuery.toLowerCase())
@@ -55,7 +55,8 @@ export function HistoryView({
         <ScrollArea className="flex-1">
           <div className="space-y-3 pr-2">
             {filtered.map((conversation) => (
-              <button
+              <Button
+                variant="ghost"
                 key={conversation.id}
                 onClick={() => {
                   onOpenConversation(conversation.id)
@@ -79,7 +80,7 @@ export function HistoryView({
                 <span className="text-[11px] font-medium text-muted-foreground shrink-0 bg-background border border-border px-2.5 py-1 rounded-lg group-hover:border-muted-foreground/30 transition">
                   {formatRelativeDate(conversation.updated_at)}
                 </span>
-              </button>
+              </Button>
             ))}
 
             {!filtered.length && (

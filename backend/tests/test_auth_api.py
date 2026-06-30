@@ -4,10 +4,10 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from src.auth.dependencies import get_current_user
-from src.core.database import get_db
-from src.domain.models import User
-from src.main import app
+from app.utils.dependencies import get_current_user
+from app.utils.database import get_db
+from app.models.user import User
+from app.main import app
 
 
 class FakeDb:
@@ -66,7 +66,7 @@ def test_patch_me_updates_partial_settings(monkeypatch) -> None:
             setattr(current_user, key, value)
         return current_user
 
-    monkeypatch.setattr("src.repositories.users.UserRepository.update", fake_update)
+    monkeypatch.setattr("app.services.repositories.users.UserRepository.update", fake_update)
 
     app.dependency_overrides[get_current_user] = override_current_user
     app.dependency_overrides[get_db] = fake_db

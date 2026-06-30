@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { PropsWithChildren, Suspense, useState } from "react"
 import {
   MenuIcon,
   MessageSquarePlusIcon,
@@ -8,7 +8,7 @@ import {
   MoonStarIcon,
   SunMediumIcon,
 } from "lucide-react"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 
 import { useAuth } from "@/hooks/use-auth"
 import { useProjects } from "@/hooks/use-projects"
@@ -22,7 +22,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { NewChatDialog } from "@/components/chat/new-chat-dialog"
-import { cn } from "@/lib/utils"
 
 function nextThemePreference(current: "system" | "light" | "dark") {
   if (current === "system") return "light"
@@ -36,24 +35,13 @@ function themeLabel(current: "system" | "light" | "dark") {
   return "Dark"
 }
 
-function pageMeta(pathname: string) {
-  if (pathname.startsWith("/settings")) return { title: "Personal settings", description: "Control your profile, appearance, and default chat behavior." }
-  if (pathname.startsWith("/analytics")) return { title: "Analytics & Insights", description: "Usage metrics, system health, and knowledge density overview." }
-  if (pathname.startsWith("/video")) return { title: "Video Studio", description: "Generate AI-powered short-form videos from your content." }
-  if (pathname.startsWith("/financial")) return { title: "Financial Dashboard", description: "Upload statements and view extracted data." }
-  if (pathname.startsWith("/extract")) return { title: "Extract", description: "Extract text from images and PDFs." }
-  return { title: "Chat workspace", description: "Ask questions, review sources, and keep project conversations flowing." }
-}
-
-function WorkspaceFrame({ children }: React.PropsWithChildren) {
-  const router = useRouter()
+function WorkspaceFrame({ children }: PropsWithChildren) {
   const pathname = usePathname()
-  const { user, isLoadingSession, signOut, updateUserSettings } = useAuth()
+  const { user, isLoadingSession, updateUserSettings } = useAuth()
   const { activeProject } = useProjects()
   const { conversations, activeConversationId } = useChat()
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false)
-  const [isNewChatOpen, setIsNewChatOpen] = React.useState(false)
-  const meta = pageMeta(pathname)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const [isNewChatOpen, setIsNewChatOpen] = useState(false)
 
   if (isLoadingSession || !user) {
     return (
@@ -166,9 +154,9 @@ function WorkspaceFrame({ children }: React.PropsWithChildren) {
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
           <ErrorBoundary>
-            <React.Suspense fallback={<Skeleton className="flex-1 m-6 rounded-2xl" />}>
+            <Suspense fallback={<Skeleton className="flex-1 m-6 rounded-2xl" />}>
               {children}
-            </React.Suspense>
+            </Suspense>
           </ErrorBoundary>
         </div>
       </div>
@@ -188,7 +176,7 @@ function WorkspaceFrame({ children }: React.PropsWithChildren) {
   )
 }
 
-export function WorkspaceShell({ children }: React.PropsWithChildren) {
+export function WorkspaceShell({ children }: PropsWithChildren) {
   return (
     <WorkspaceProviders>
       <WorkspaceFrame>{children}</WorkspaceFrame>

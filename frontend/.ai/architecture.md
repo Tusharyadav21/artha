@@ -37,7 +37,7 @@ lib/
 - `User`: Application users credentials and session details.
 - `Project`: Scoping container for document isolation and chat history.
 - `Document`: Document metadata, parsing states, and storage details.
-- `DocumentChunk`: Semantic vector chunks and embeddings (768-dimensional `nomic-embed-text` vectors).
+- `DocumentChunk`: Semantic vector chunks and embeddings (1024-dimensional vectors via Ollama embedding model).
 - `Conversation`: Persistent chat session instances.
 - `Message`: Discrete dialogue exchanges with citations and feedback.
 

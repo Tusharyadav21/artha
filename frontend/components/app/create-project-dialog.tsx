@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { ChangeEvent, FormEvent, ReactElement, useRef, useState } from "react"
 import { FolderPlusIcon, UploadIcon, XIcon, FileIcon, Loader2Icon } from "lucide-react"
 
 import { useProjects } from "@/hooks/use-projects"
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils"
 import { MAX_UPLOAD_SIZE, ACCEPTED_FILE_TYPES } from "@/lib/constants"
 
 interface CreateProjectDialogProps {
-  trigger?: React.ReactElement
+  trigger?: ReactElement
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
@@ -33,17 +33,17 @@ export function CreateProjectDialog({
   open: controlledOpen,
   onOpenChange: setControlledOpen,
 }: CreateProjectDialogProps) {
-  const [internalOpen, setInternalOpen] = React.useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
 
   const { createProject, isCreatingProject } = useProjects()
   const { uploadDocument, isUploading } = useDocuments()
-  const [name, setName] = React.useState("")
-  const [files, setFiles] = React.useState<File[]>([])
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [name, setName] = useState("")
+  const [files, setFiles] = useState<File[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files)
       const validFiles = selectedFiles.filter(f => f.size <= MAX_UPLOAD_SIZE)
@@ -61,7 +61,7 @@ export function CreateProjectDialog({
   }
 
   // fallow-ignore-next-line complexity
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     const trimmedName = name.trim()
     if (!trimmedName) return

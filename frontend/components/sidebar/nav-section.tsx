@@ -1,10 +1,10 @@
 "use client"
 
-import * as React from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { type WorkflowDef } from "@/lib/workflows"
 import { cn } from "@/lib/utils"
+import { Button } from "../ui/button"
 
 interface NavSectionProps {
   title: string
@@ -19,8 +19,8 @@ export function NavSection({ title, items, isCollapsed, onNavigate }: NavSection
 
   return (
     <div className="px-2 pb-2">
-      {!isCollapsed && (
-        <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 select-none">
+      {!isCollapsed && title.toUpperCase() !== "WORKSPACE" && (
+        <p className="px-2 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/60 select-none">
           {title}
         </p>
       )}
@@ -32,8 +32,9 @@ export function NavSection({ title, items, isCollapsed, onNavigate }: NavSection
             return (
               <Tooltip key={item.id}>
                 <TooltipTrigger className="w-full">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => { router.push(item.href); onNavigate?.() }}
                     className={cn(
                       "w-full flex items-center justify-center p-2 h-10 rounded-xl transition-all duration-200",
@@ -43,19 +44,20 @@ export function NavSection({ title, items, isCollapsed, onNavigate }: NavSection
                     )}
                   >
                     <Icon className="size-4" />
-                  </button>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent side="right">{item.label}</TooltipContent>
               </Tooltip>
             )
           }
           return (
-            <button
+            <Button
+              variant="ghost"
               key={item.id}
               type="button"
               onClick={() => { router.push(item.href); onNavigate?.() }}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200",
+                "w-full h-auto flex items-center justify-start gap-3 px-2 py-2 rounded-xl text-sm font-medium transition-all duration-200",
                 isActive
                   ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
@@ -63,7 +65,7 @@ export function NavSection({ title, items, isCollapsed, onNavigate }: NavSection
             >
               <Icon className="size-4 shrink-0" />
               <span>{item.label}</span>
-            </button>
+            </Button>
           )
         })}
       </div>

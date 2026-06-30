@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import { SparklesIcon, BotIcon, KeyboardIcon } from "lucide-react"
 
 interface ContextPreviewProps {

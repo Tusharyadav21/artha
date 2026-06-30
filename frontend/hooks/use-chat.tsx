@@ -1,7 +1,6 @@
 "use client"
 
-import * as React from "react"
-
+import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { useProjects } from "@/hooks/use-projects"
 import { useDocuments } from "@/hooks/use-documents"
@@ -39,7 +38,7 @@ interface ChatContextValue {
   loadMoreConversations: () => Promise<void>
 }
 
-const ChatContext = React.createContext<ChatContextValue | null>(null)
+const ChatContext = createContext<ChatContextValue | null>(null)
 
 function getStoredFeedback(message: Message): FeedbackRating | null {
   const feedback = message.metadata_?.feedback
@@ -55,26 +54,26 @@ function getStoredFeedback(message: Message): FeedbackRating | null {
   return null
 }
 
-export function ChatProvider({ children }: React.PropsWithChildren) {
+export function ChatProvider({ children }: PropsWithChildren) {
   const { token, authedFetch } = useAuth()
   const { activeProjectId, selectProject } = useProjects()
   const { scopedDocumentIds, hasScopedDocuments } = useDocuments()
 
-  const [conversations, setConversations] = React.useState<Conversation[]>([])
-  const [conversationsTotal, setConversationsTotal] = React.useState(0)
-  const [activeConversationId, setActiveConversationId] = React.useState<string | null>(null)
-  const [messages, setMessages] = React.useState<Message[]>([])
-  const [sources, setSources] = React.useState<Source[]>([])
-  const [feedbackByMessageId, setFeedbackByMessageId] = React.useState<
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [conversationsTotal, setConversationsTotal] = useState(0)
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [sources, setSources] = useState<Source[]>([])
+  const [feedbackByMessageId, setFeedbackByMessageId] = useState<
     Record<string, FeedbackRating>
   >({})
-  const [pendingFeedbackId, setPendingFeedbackId] = React.useState<string | null>(null)
-  const [isLoadingMessages, setIsLoadingMessages] = React.useState(false)
-  const [isStreaming, setIsStreaming] = React.useState(false)
-  const [executingNode, setExecutingNode] = React.useState<string | null>(null)
-  const [isLoadingMoreConversations, setIsLoadingMoreConversations] = React.useState(false)
+  const [pendingFeedbackId, setPendingFeedbackId] = useState<string | null>(null)
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [executingNode, setExecutingNode] = useState<string | null>(null)
+  const [isLoadingMoreConversations, setIsLoadingMoreConversations] = useState(false)
 
-  const loadConversations = React.useCallback(
+  const loadConversations = useCallback(
     async (projectId: string, skip = 0) => {
       const response = await authedFetch<PaginatedResponse<Conversation>>(
         `/api/projects/${projectId}/conversations?skip=${skip}&limit=${PAGE_SIZE}`
@@ -90,20 +89,18 @@ export function ChatProvider({ children }: React.PropsWithChildren) {
     [authedFetch]
   )
 
-  React.useEffect(() => {
-    if (!activeProjectId) {
-      setConversations([])
-      setConversationsTotal(0)
-      setActiveConversationId(null)
-      setMessages([])
-      setSources([])
-      setFeedbackByMessageId({})
-      return
+  useEffect(() => {
+    if (activeProjectId) {
+      authedFetch<PaginatedResponse<Conversation>>(
+        `/api/projects/${activeProjectId}/conversations?skip=0&limit=${PAGE_SIZE}`
+      ).then(response => {
+        setConversations(response.items)
+        setConversationsTotal(response.total)
+      })
     }
-    void loadConversations(activeProjectId)
-  }, [activeProjectId, loadConversations])
+  }, [activeProjectId, authedFetch])
 
-  const openConversation = React.useCallback(
+  const openConversation = useCallback(
     async (conversationId: string) => {
       if (!activeProjectId) return
 
@@ -135,7 +132,7 @@ export function ChatProvider({ children }: React.PropsWithChildren) {
     [activeProjectId, authedFetch]
   )
 
-  const prepareNewChat = React.useCallback(
+  const prepareNewChat = useCallback(
     async (config: { projectId: string; documentIds: string[] }) => {
       await selectProject(config.projectId)
       setActiveConversationId(null)
@@ -146,7 +143,7 @@ export function ChatProvider({ children }: React.PropsWithChildren) {
     [selectProject]
   )
 
-  const submitMessage = React.useCallback(
+  const submitMessage = useCallback(
     async (question: string) => {
       if (!question.trim() || !activeProjectId || isStreaming || !token) return false
 
@@ -227,7 +224,7 @@ export function ChatProvider({ children }: React.PropsWithChildren) {
     ]
   )
 
-  const sendFeedback = React.useCallback(
+  const sendFeedback = useCallback(
     async (messageId: string, rating: FeedbackRating) => {
       if (!activeProjectId) return
 
@@ -260,7 +257,7 @@ export function ChatProvider({ children }: React.PropsWithChildren) {
     [activeProjectId, authedFetch]
   )
 
-  const loadMoreConversations = React.useCallback(async () => {
+  const loadMoreConversations = useCallback(async () => {
     if (!activeProjectId || conversations.length >= conversationsTotal) return
 
     setIsLoadingMoreConversations(true)
@@ -273,7 +270,7 @@ export function ChatProvider({ children }: React.PropsWithChildren) {
     }
   }, [activeProjectId, conversations.length, conversationsTotal, loadConversations])
 
-  const value = React.useMemo<ChatContextValue>(
+  const value = useMemo<ChatContextValue>(
     () => ({
       conversations,
       conversationsTotal,
@@ -316,7 +313,7 @@ export function ChatProvider({ children }: React.PropsWithChildren) {
 }
 
 export function useChat() {
-  const value = React.useContext(ChatContext)
+  const value = useContext(ChatContext)
   if (!value) throw new Error("useChat must be used inside ChatProvider")
   return value
 }

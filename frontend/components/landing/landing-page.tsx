@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useState } from "react"
 import dynamic from "next/dynamic"
 import { useReducedMotion } from "framer-motion"
 
@@ -37,8 +37,8 @@ function SectionSkeleton() {
 }
 
 export function LandingPage() {
-  const [authOpen, setAuthOpen] = React.useState(false)
-  const [authMode, setAuthMode] = React.useState<"login" | "register">("login")
+  const [authOpen, setAuthOpen] = useState(false)
+  const [authMode, setAuthMode] = useState<"login" | "register">("login")
   const prefersReducedMotion = useReducedMotion()
 
   const handleLoginOpen = () => {

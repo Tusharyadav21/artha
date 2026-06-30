@@ -27,8 +27,8 @@ The backend reads configuration from environment variables. A template is provid
 | `DATABASE_URL`         | PostgreSQL connection string | `postgresql+asyncpg://...` |
 | `REDIS_URL`            | Redis connection string      | `redis://localhost:6379/0` |
 | `OLLAMA_BASE_URL`      | URL for Ollama API           | `http://localhost:11434`   |
-| `OLLAMA_MODEL_PLANNER` | Model for planning/reasoning | `gemma4:e4b`               |
-| `OLLAMA_MODEL_EMBED`   | Model for vector embeddings  | `nomic-embed-text`         |
+| `OLLAMA_MODEL_PLANNER` | Model for planning/reasoning | `qwen2.5:7b`               |
+| `OLLAMA_MODEL_EMBED`   | Model for vector embeddings  | `bge-m3`                   |
 
 ## 📦 Local Development
 
@@ -72,7 +72,7 @@ The Docker setup automatically enables these. For local development, run the abo
 
 4. **Start Worker (in separate terminal)**:
    ```bash
-   uv run arq src.workers.arq_worker.WorkerSettings
+   uv run arq app.services.arq_worker.WorkerSettings
    ```
 
 ## 🧪 Quality Control
