@@ -3,7 +3,8 @@
 import * as React from "react"
 import { UploadIcon, SaveIcon } from "lucide-react"
 
-import { useWorkspace } from "@/components/app/workspace-provider"
+import { useProjects } from "@/hooks/use-projects"
+import { useDocuments } from "@/hooks/use-documents"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,15 +32,15 @@ export function DocumentLibraryDialog({
   onScopeSelect,
   autoFocusAfterUpload = true,
 }: DocumentLibraryDialogProps) {
+  const { activeProject } = useProjects()
   const {
-    activeProject,
     documents,
     selectedDocumentIds,
     isUploading,
     toggleDocumentScope,
     clearDocumentScope,
     uploadDocument,
-  } = useWorkspace()
+  } = useDocuments()
 
   const [showScopedOnly, setShowScopedOnly] = React.useState(false)
 

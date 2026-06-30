@@ -1,5 +1,6 @@
+
 from pydantic import BaseModel
-from typing import Optional, List
+
 
 class Scene(BaseModel):
     """
@@ -20,10 +21,10 @@ class Scene(BaseModel):
     start: float
     end: float
     content: str # The text to speak
-    code: Optional[str] = None
-    language: Optional[str] = "python"
-    highlight_lines: Optional[list[int]] = []
-    camera_focus: Optional[list[int]] = [] # [start_line, end_line]
+    code: str | None = None
+    language: str | None = "python"
+    highlight_lines: list[int] | None = []
+    camera_focus: list[int] | None = [] # [start_line, end_line]
 
 class VideoTimeline(BaseModel):
     """
@@ -67,8 +68,8 @@ class VoiceRequest(BaseModel):
         speed (Optional[float]): Speech playback speed.
     """
     text: str
-    voice: Optional[str] = "af_heart"
-    speed: Optional[float] = 1.1
+    voice: str | None = "af_heart"
+    speed: float | None = 1.1
 
 class VoiceResponse(BaseModel):
     """
@@ -92,9 +93,9 @@ class VisualsRequest(BaseModel):
         bg_color (Optional[str]): Background color hex code.
     """
     code: str
-    language: Optional[str] = "python"
-    theme: Optional[str] = "atom-one-dark"
-    bg_color: Optional[str] = "#0d0f14"
+    language: str | None = "python"
+    theme: str | None = "atom-one-dark"
+    bg_color: str | None = "#0d0f14"
 
 class VisualsResponse(BaseModel):
     """
@@ -118,7 +119,7 @@ class AssembleRequest(BaseModel):
     """
     title: str
     timeline: VideoTimeline
-    output_name: Optional[str] = "final_short.mp4"
+    output_name: str | None = "final_short.mp4"
 
 class AssembleResponse(BaseModel):
     """

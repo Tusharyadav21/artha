@@ -1,10 +1,9 @@
 from datetime import datetime
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-from src.domain.models import HomeTab, ThemePreference, ChatScopeMode
+from src.domain.models import ChatScopeMode, HomeTab, ThemePreference
 
 
 class UserCreate(BaseModel):

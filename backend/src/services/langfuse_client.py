@@ -29,7 +29,8 @@ def get_langfuse():
         None.
 
     Outputs:
-        Langfuse | None: Configured client if keys exist and initialization succeeds, otherwise None.
+        Langfuse | None: Configured client if keys exist and initialization succeeds,
+            otherwise None.
 
     Execution flow:
         1. Fetch settings.

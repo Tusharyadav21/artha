@@ -20,7 +20,8 @@ class UserRepository:
         - AsyncSession (SQLAlchemy) for database connectivity.
 
     Architectural constraints:
-        - Email addresses must be normalized to lowercase before storage and lookup to ensure uniqueness.
+        - Email addresses must be normalized to lowercase before storage and lookup to ensure
+            uniqueness.
         - Must not contain business logic (e.g., password hashing must happen in the service layer).
     """
     def __init__(self, db: AsyncSession) -> None:

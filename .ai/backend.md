@@ -4,7 +4,7 @@ This document defines the decouple architectural rules, layer boundaries, and De
 
 ---
 
-## 🏛️ 1. Service-Repository Pattern Layers
+## 1. Service-Repository Pattern Layers
 
 We enforce decoupling across three distinct application boundaries to maximize testability:
 
@@ -35,7 +35,7 @@ We enforce decoupling across three distinct application boundaries to maximize t
 
 ---
 
-## ⚡ 2. Async-First Operations
+## 2. Async-First Operations
 
 All network and database transactions must execute asynchronously:
 * Use `AsyncSession` provided by SQLAlchemy for all database sessions.
@@ -44,7 +44,7 @@ All network and database transactions must execute asynchronously:
 
 ---
 
-## 💉 3. FastAPI Dependency Injection (`Depends`)
+## 3. FastAPI Dependency Injection (`Depends`)
 
 - **Central DI Pattern**: Inject services and database contexts dynamically using FastAPI `Depends()` in APIRouter paths:
   ```python
@@ -57,3 +57,35 @@ All network and database transactions must execute asynchronously:
       return await repo.list_for_user(current_user.id)
   ```
 - **Mockability**: By injecting database engines and repositories, we can easily inject mocked equivalents during unit tests without modifying source codes.
+
+---
+
+## 4. Singleton Patterns
+
+Expensive clients (OllamaClient, Reranker) use module-level singletons:
+```python
+_lock: asyncio.Lock = asyncio.Lock()
+_client: OllamaClient | None = None
+
+async def _get_ollama_client() -> OllamaClient:
+    global _client
+    if _client is None:
+        async with _lock:
+            if _client is None:
+                _client = OllamaClient()
+    return _client
+```
+- Always use `asyncio.Lock` (double-checked locking) for async singletons.
+- Redis client is initialized once in `core.redis_client.get_redis()`.
+
+---
+
+## 5. Config-Driven Design
+
+All tunable values come from `src.core.config.settings`:
+- Thresholds (relevance, HyDE complexity, history limits)
+- Timeouts (ingestion enrichment, LLM generation)
+- Limits (semaphore concurrency, max chunk tokens, upload size)
+- Model names (reasoner, embed)
+
+Never hardcode magic numbers — add a field to `Settings` and import via `from core.config import settings`.

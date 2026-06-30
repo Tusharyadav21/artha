@@ -48,7 +48,8 @@ class ConversationRepository:
             limit (int): Maximum number of records to return.
 
         Outputs:
-            tuple[list[Conversation], int]: A tuple containing the slice of conversations and the total matching count.
+            tuple[list[Conversation], int]: A tuple containing the slice of conversations and
+                the total matching count.
 
         Exceptions:
             None explicitly raised.
@@ -91,7 +92,8 @@ class ConversationRepository:
             project_id (UUID): ID of the project for access control.
 
         Outputs:
-            Conversation | None: The conversation entity with loaded messages, or None if not found/authorized.
+            Conversation | None: The conversation entity with loaded messages, or None if not
+                found/authorized.
 
         Exceptions:
             None explicitly raised.

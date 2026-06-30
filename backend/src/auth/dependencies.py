@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status, Cookie
+from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,7 +42,8 @@ async def get_current_user(
 
     Raises:
         HTTPException:
-            401 Unauthorized if no token is provided, the token is invalid, or the user no longer exists.
+            401 Unauthorized if no token is provided, the token is invalid, or the user
+            no longer exists.
 
     Flow:
         1. Prioritize the header token, falling back to the cookie token.

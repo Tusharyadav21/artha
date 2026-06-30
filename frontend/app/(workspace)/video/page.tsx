@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation"
+import { VideoCreator } from "@/components/video/Creator"
 
-// Video generation is not available in this release.
 export default function VideoPage() {
-  redirect("/chat")
+  return <VideoCreator />
 }

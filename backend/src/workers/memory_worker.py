@@ -1,12 +1,12 @@
-from logging import getLogger
 import json
+from logging import getLogger
 from uuid import UUID
 
-from src.core.database import AsyncSessionLocal
-from src.repositories.users import UserRepository
-from src.domain.models import UserMemory, Conversation
-from src.services.ollama import OllamaClient
 from sqlalchemy import select
+
+from src.core.database import AsyncSessionLocal
+from src.domain.models import Conversation, UserMemory
+from src.services.ollama import OllamaClient
 
 logger = getLogger(__name__)
 
@@ -29,14 +29,18 @@ async def extract_and_store_memory(conversation_id: str, user_id: str) -> None:
             
         history_str = "\n".join([f"{m.role}: {m.content}" for m in conversation.messages[-6:]])
         
-        prompt = f"""
-        Analyze the following recent conversation history and extract any lasting facts, user preferences, or explicit corrections the user made.
-        Return ONLY a JSON array of strings, where each string is a concise memory to retain for this user.
-        If there is nothing worth remembering, return an empty array [].
-        
-        Conversation:
-        {history_str}
-        """
+        prompt = (
+            f"\n"
+            f"        Analyze the following recent conversation history and extract any "
+            f"lasting facts, user preferences, or explicit corrections the user made.\n"
+            f"        Return ONLY a JSON array of strings, where each string is a concise "
+            f"memory to retain for this user.\n"
+            f"        If there is nothing worth remembering, return an empty array [].\n"
+            f"\n"
+            f"        Conversation:\n"
+            f"        {history_str}\n"
+            f"    "
+        )
         
         ollama = OllamaClient()
         memories_json = await ollama.generate(prompt, format="json")

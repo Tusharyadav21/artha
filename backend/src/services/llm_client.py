@@ -1,5 +1,4 @@
-"""
-Abstract LLM client interface and per-provider implementations.
+"""Abstract LLM client interface and per-provider implementations.
 
 Design:
 - BaseLLMClient defines generate() + stream_generate(); embed() stays on OllamaClient
@@ -32,7 +31,6 @@ from tenacity import (
 
 logger = logging.getLogger(__name__)
 
-
 # ---------------------------------------------------------------------------
 # SSRF guard
 # ---------------------------------------------------------------------------
@@ -44,14 +42,13 @@ _PRIVATE_NETS = [
     ipaddress.ip_network("10.0.0.0/8"),
     ipaddress.ip_network("172.16.0.0/12"),
     ipaddress.ip_network("192.168.0.0/16"),
-    ipaddress.ip_network("169.254.0.0/16"),  # link-local
-    ipaddress.ip_network("fc00::/7"),         # ULA
-    ipaddress.ip_network("100.64.0.0/10"),   # shared address space
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("100.64.0.0/10"),
 ]
 
 
 def _validate_base_url(url: str) -> str:
-    """Reject non-https and private/loopback hosts to prevent SSRF."""
     parsed = urlparse(url)
     if parsed.scheme != "https":
         raise ValueError(f"base_url must use https scheme, got {parsed.scheme!r}")
@@ -73,8 +70,8 @@ def _validate_base_url(url: str) -> str:
 # Retry helpers
 # ---------------------------------------------------------------------------
 
+
 def _is_retryable(exc: BaseException) -> bool:
-    """Rate-limits, timeouts, and 5xx are retryable; auth/validation errors are not."""
     if isinstance(exc, httpx.TimeoutException | httpx.ConnectError):
         return True
     if isinstance(exc, httpx.HTTPStatusError):
@@ -103,9 +100,8 @@ async def _stream_retry_sleep(attempt: int, base_delay: float, exc: Exception) -
 # Abstract base
 # ---------------------------------------------------------------------------
 
-class BaseLLMClient(ABC):
-    """Minimal interface every provider client must satisfy."""
 
+class BaseLLMClient(ABC):
     @abstractmethod
     async def generate(self, prompt: str, *, model_name: str | None = None, **kwargs) -> str: ...
 
@@ -114,17 +110,75 @@ class BaseLLMClient(ABC):
         self, prompt: str, *, model_name: str | None = None, **kwargs
     ) -> AsyncIterator[str]: ...
 
+    @abstractmethod
+    async def close(self) -> None: ...
+
+
+# ---------------------------------------------------------------------------
+# Shared HTTP client infrastructure
+# ---------------------------------------------------------------------------
+
+
+class _BaseHTTPClient(BaseLLMClient):
+    _BASE_URL: str = ""
+    _DEFAULT_MODEL: str = ""
+
+    def __init__(
+        self,
+        api_key: str,
+        *,
+        model: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+        max_retries: int = 3,
+        base_delay_s: float = 1.0,
+        timeout_s: int = 60,
+        **_,
+    ) -> None:
+        self._model = model or self._DEFAULT_MODEL
+        self._temperature = temperature
+        self._max_tokens = max_tokens
+        self._timeout_s = timeout_s
+        self._max_retries = max_retries
+        self._base_delay_s = base_delay_s
+        self._headers = {"Content-Type": "application/json"}
+        if api_key:
+            self._headers["Authorization"] = f"Bearer {api_key}"
+        self._client: httpx.AsyncClient | None = None
+
+    def _get_client(self) -> httpx.AsyncClient:
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(
+                base_url=self._BASE_URL,
+                headers=self._headers,
+                timeout=httpx.Timeout(
+                    connect=10.0, read=float(self._timeout_s), write=10.0, pool=5.0
+                ),
+                follow_redirects=False,
+            )
+        return self._client
+
+    def _body(self, prompt: str, model: str, stream: bool) -> dict:
+        return {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": self._temperature,
+            "max_tokens": self._max_tokens,
+            "stream": stream,
+        }
+
     async def close(self) -> None:
-        pass
+        if self._client:
+            await self._client.aclose()
+            self._client = None
 
 
 # ---------------------------------------------------------------------------
 # OpenAI-compatible (OpenAI · Groq · Mistral · Together AI)
 # ---------------------------------------------------------------------------
 
-class OpenAICompatibleClient(BaseLLMClient):
-    """Single implementation for all OpenAI-compatible chat/completions endpoints."""
 
+class OpenAICompatibleClient(_BaseHTTPClient):
     _BASE_URLS: dict[str, str] = {
         "openai": "https://api.openai.com/v1",
         "groq": "https://api.groq.com/openai/v1",
@@ -151,21 +205,13 @@ class OpenAICompatibleClient(BaseLLMClient):
         timeout_s: int = 60,
         extra_params: dict | None = None,
     ) -> None:
-        extra = extra_params or {}
+        super().__init__(api_key, model=model, temperature=temperature, max_tokens=max_tokens,
+                         max_retries=max_retries, base_delay_s=base_delay_s, timeout_s=timeout_s)
         self._provider = provider
         self._model = model or self._DEFAULT_MODELS.get(provider, "gpt-4o-mini")
-        self._temperature = temperature
-        self._max_tokens = max_tokens
-        self._timeout_s = timeout_s
-        self._max_retries = max_retries
-        self._base_delay_s = base_delay_s
-        raw_url = extra.get("base_url") or self._BASE_URLS.get(provider, "")
+        raw_url = (extra_params or {}).get("base_url") or self._BASE_URLS.get(provider, "")
         self._base_url = _validate_base_url(raw_url) if raw_url else ""
-        self._headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        self._client: httpx.AsyncClient | None = None
+        self._headers["Authorization"] = f"Bearer {api_key}"
 
     def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
@@ -179,21 +225,14 @@ class OpenAICompatibleClient(BaseLLMClient):
             )
         return self._client
 
-    def _body(self, prompt: str, model: str, stream: bool) -> dict:
-        return {
-            "model": model,
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": self._temperature,
-            "max_tokens": self._max_tokens,
-            "stream": stream,
-        }
-
     async def generate(self, prompt: str, *, model_name: str | None = None, **kwargs) -> str:
         model = model_name or self._model
 
         @_build_retry(self._max_retries, self._base_delay_s)
         async def _call() -> str:
-            resp = await self._get_client().post("/chat/completions", json=self._body(prompt, model, False))
+            resp = await self._get_client().post(
+                "/chat/completions", json=self._body(prompt, model, False)
+            )
             resp.raise_for_status()
             return resp.json()["choices"][0]["message"]["content"].strip()
 
@@ -230,19 +269,14 @@ class OpenAICompatibleClient(BaseLLMClient):
                 await _stream_retry_sleep(attempt, self._base_delay_s, exc)
         raise last_error or httpx.RequestError("Unknown streaming error")
 
-    async def close(self) -> None:
-        if self._client:
-            await self._client.aclose()
-            self._client = None
-
 
 # ---------------------------------------------------------------------------
 # Anthropic
 # ---------------------------------------------------------------------------
 
-class AnthropicClient(BaseLLMClient):
-    """Anthropic Claude via the Messages API."""
 
+class AnthropicClient(_BaseHTTPClient):
+    _BASE_URL = "https://api.anthropic.com/v1"
     _DEFAULT_MODEL = "claude-3-5-haiku-latest"
 
     def __init__(
@@ -255,32 +289,15 @@ class AnthropicClient(BaseLLMClient):
         max_retries: int = 3,
         base_delay_s: float = 1.0,
         timeout_s: int = 60,
-        **_,
+        **_: dict,
     ) -> None:
-        self._model = model or self._DEFAULT_MODEL
-        self._temperature = temperature
-        self._max_tokens = max_tokens
-        self._timeout_s = timeout_s
-        self._max_retries = max_retries
-        self._base_delay_s = base_delay_s
+        super().__init__("", model=model, temperature=temperature, max_tokens=max_tokens,
+                         max_retries=max_retries, base_delay_s=base_delay_s, timeout_s=timeout_s)
         self._headers = {
             "x-api-key": api_key,
             "anthropic-version": "2023-06-01",
             "Content-Type": "application/json",
         }
-        self._client: httpx.AsyncClient | None = None
-
-    def _get_client(self) -> httpx.AsyncClient:
-        if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(
-                base_url="https://api.anthropic.com/v1",
-                headers=self._headers,
-                timeout=httpx.Timeout(
-                    connect=10.0, read=float(self._timeout_s), write=10.0, pool=5.0
-                ),
-                follow_redirects=False,
-            )
-        return self._client
 
     def _body(self, prompt: str, model: str, stream: bool) -> dict:
         return {
@@ -296,7 +313,9 @@ class AnthropicClient(BaseLLMClient):
 
         @_build_retry(self._max_retries, self._base_delay_s)
         async def _call() -> str:
-            resp = await self._get_client().post("/messages", json=self._body(prompt, model, False))
+            resp = await self._get_client().post(
+                "/messages", json=self._body(prompt, model, False)
+            )
             resp.raise_for_status()
             return resp.json()["content"][0]["text"].strip()
 
@@ -332,19 +351,13 @@ class AnthropicClient(BaseLLMClient):
                 await _stream_retry_sleep(attempt, self._base_delay_s, exc)
         raise last_error or httpx.RequestError("Unknown streaming error")
 
-    async def close(self) -> None:
-        if self._client:
-            await self._client.aclose()
-            self._client = None
-
 
 # ---------------------------------------------------------------------------
 # Google Gemini
 # ---------------------------------------------------------------------------
 
-class GeminiClient(BaseLLMClient):
-    """Google Gemini via the Generative Language REST API."""
 
+class GeminiClient(_BaseHTTPClient):
     _DEFAULT_MODEL = "gemini-2.0-flash"
     _BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
@@ -360,14 +373,9 @@ class GeminiClient(BaseLLMClient):
         timeout_s: int = 60,
         **_,
     ) -> None:
+        super().__init__("", model=model, temperature=temperature, max_tokens=max_tokens,
+                         max_retries=max_retries, base_delay_s=base_delay_s, timeout_s=timeout_s)
         self._api_key = api_key
-        self._model = model or self._DEFAULT_MODEL
-        self._temperature = temperature
-        self._max_tokens = max_tokens
-        self._timeout_s = timeout_s
-        self._max_retries = max_retries
-        self._base_delay_s = base_delay_s
-        self._client: httpx.AsyncClient | None = None
 
     def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
@@ -436,20 +444,15 @@ class GeminiClient(BaseLLMClient):
                 await _stream_retry_sleep(attempt, self._base_delay_s, exc)
         raise last_error or httpx.RequestError("Unknown streaming error")
 
-    async def close(self) -> None:
-        if self._client:
-            await self._client.aclose()
-            self._client = None
-
 
 # ---------------------------------------------------------------------------
 # Cohere
 # ---------------------------------------------------------------------------
 
-class CohereClient(BaseLLMClient):
-    """Cohere Command via Chat API v2."""
 
+class CohereClient(_BaseHTTPClient):
     _DEFAULT_MODEL = "command-r-plus-08-2024"
+    _BASE_URL = "https://api.cohere.com/v2"
 
     def __init__(
         self,
@@ -463,29 +466,12 @@ class CohereClient(BaseLLMClient):
         timeout_s: int = 60,
         **_,
     ) -> None:
-        self._model = model or self._DEFAULT_MODEL
-        self._temperature = temperature
-        self._max_tokens = max_tokens
-        self._timeout_s = timeout_s
-        self._max_retries = max_retries
-        self._base_delay_s = base_delay_s
+        super().__init__("", model=model, temperature=temperature, max_tokens=max_tokens,
+                         max_retries=max_retries, base_delay_s=base_delay_s, timeout_s=timeout_s)
         self._headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
-        self._client: httpx.AsyncClient | None = None
-
-    def _get_client(self) -> httpx.AsyncClient:
-        if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(
-                base_url="https://api.cohere.com/v2",
-                headers=self._headers,
-                timeout=httpx.Timeout(
-                    connect=10.0, read=float(self._timeout_s), write=10.0, pool=5.0
-                ),
-                follow_redirects=False,
-            )
-        return self._client
 
     def _body(self, prompt: str, model: str, stream: bool) -> dict:
         return {
@@ -537,23 +523,16 @@ class CohereClient(BaseLLMClient):
                 await _stream_retry_sleep(attempt, self._base_delay_s, exc)
         raise last_error or httpx.RequestError("Unknown streaming error")
 
-    async def close(self) -> None:
-        if self._client:
-            await self._client.aclose()
-            self._client = None
-
 
 # ---------------------------------------------------------------------------
 # Ollama adapter (wraps existing OllamaClient)
 # ---------------------------------------------------------------------------
 
-class OllamaAdapter(BaseLLMClient):
-    """Thin adapter so OllamaClient satisfies BaseLLMClient without modification."""
 
+class OllamaAdapter(BaseLLMClient):
     def __init__(self, model: str | None = None) -> None:
-        # Lazy import to avoid circular dependency during module load
-        from src.services.ollama import OllamaClient  # noqa: PLC0415
-        self._inner = OllamaClient()
+        from src.services.ollama import get_ollama_client
+        self._inner = get_ollama_client()
         self._model = model
 
     async def generate(self, prompt: str, *, model_name: str | None = None, **kwargs) -> str:
