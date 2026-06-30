@@ -10,21 +10,49 @@ from src.core.config import get_settings
 from src.core.logging import configure_logging
 from src.core.middleware import RequestTracingMiddleware
 from src.core.rate_limit import limiter
-from src.routers import auth, chat, conversations, documents, health, projects
+from src.routers import (
+    auth,
+    chat,
+    conversations,
+    documents,
+    health,
+    llm_config,
+    projects,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Purpose:
+        Manages application startup and shutdown events.
+
+    Responsibilities:
+        - Initialize global settings
+        - Configure system logging
+
+    Args:
+        app (FastAPI):
+            The FastAPI application instance.
+
+    Returns:
+        None
+
+    Side Effects:
+        - Sets up logging for the process
+    """
     settings = get_settings()
     configure_logging(settings.log_level)
     yield
 
 
-app = FastAPI(title="Agentic RAG API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Artha API", version="0.1.0", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 settings = get_settings()
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(RequestTracingMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allow_origins,
@@ -33,8 +61,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(SlowAPIMiddleware)
-app.add_middleware(RequestTracingMiddleware)
 
 app.include_router(health.router)
 app.include_router(auth.router)
@@ -42,3 +68,4 @@ app.include_router(projects.router)
 app.include_router(documents.router)
 app.include_router(conversations.router)
 app.include_router(chat.router)
+app.include_router(llm_config.router)

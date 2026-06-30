@@ -11,7 +11,20 @@ export function apiUrl(path: string): string {
 export interface User {
   id: string
   email: string
+  display_name: string | null
+  theme_preference: "system" | "light" | "dark"
+  default_home_tab: "chat" | "library" | "settings"
+  sidebar_collapsed: boolean
+  new_chat_scope_mode: "clear" | "remember" | "all-completed"
   created_at: string
+}
+
+export interface UserSettingsUpdate {
+  display_name?: string | null
+  theme_preference?: User["theme_preference"]
+  default_home_tab?: User["default_home_tab"]
+  sidebar_collapsed?: boolean
+  new_chat_scope_mode?: User["new_chat_scope_mode"]
 }
 
 export interface TokenResponse {
@@ -73,6 +86,23 @@ export interface ChatRequest {
   conversation_id?: string | null
   message: string
   document_ids?: string[] | null
+  model?: string | null
+  num_ctx?: number | null
+  num_predict?: number | null
+}
+
+export interface ChangePasswordRequest {
+  current_password: string
+  new_password: string
+}
+
+export interface ForgotPasswordRequest {
+  email: string
+}
+
+export interface ResetPasswordRequest {
+  token: string
+  new_password: string
 }
 
 export interface FeedbackRequest {
@@ -86,6 +116,7 @@ function getNetworkErrorMessage(): string {
   return `Could not reach API at ${API_URL}${origin}. Make sure the backend is running and that CORS allows this frontend origin.`
 }
 
+// fallow-ignore-next-line complexity
 async function readErrorDetail(response: Response): Promise<string> {
   const body = await response.text()
   if (!body) {
@@ -114,6 +145,7 @@ async function readErrorDetail(response: Response): Promise<string> {
   return body
 }
 
+// fallow-ignore-next-line complexity
 export async function apiFetch<T>(
   path: string,
   token: string | null,
@@ -145,3 +177,22 @@ export async function apiFetch<T>(
   }
   return response.json() as Promise<T>
 }
+
+export interface OllamaSettings {
+  mode: "local" | "cloud"
+  localModel: string
+  cloudModel: string
+  embedModel: string
+  numCtx: number
+  numPredict: number
+}
+
+export const DEFAULT_OLLAMA_SETTINGS: OllamaSettings = {
+  mode: "local",
+  localModel: "qwen2.5:3b",
+  cloudModel: "qwen3-coder-next:cloud",
+  embedModel: "nomic-embed-text",
+  numCtx: 4096,
+  numPredict: 512,
+}
+

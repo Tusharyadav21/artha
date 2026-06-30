@@ -1,18 +1,38 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
+import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
 
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
-]);
+/** @type {import('eslint').Linter.Config[]} */
+const eslintConfig = [
+  ...nextCoreWebVitals,
+  {
+    rules: {
+      // ── TypeScript Strict ──────────────────────────────────────
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/no-explicit-any': 'warn',
+
+      // ── React / Next.js ────────────────────────────────────────
+      'react/no-unescaped-entities': 'off',
+
+      // ── General quality ────────────────────────────────────────
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'prefer-const': 'error',
+      'no-var': 'error',
+      eqeqeq: ['error', 'always'],
+      curly: ['error', 'multi-line'],
+    },
+  },
+  {
+    ignores: [
+      '.next/',
+      'node_modules/',
+      'public/',
+      'components/ui/',
+      '*.config.mjs',
+      '*.config.ts',
+    ],
+  },
+];
 
 export default eslintConfig;

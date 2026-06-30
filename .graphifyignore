@@ -1,0 +1,15 @@
+# Ignore styles and generic UI primitives
+**/components/ui/**
+**/styles/**
+*.css
+*.scss
+
+# Ignore deployment boilerplate
+docker-compose.yml
+Dockerfile
+.env*
+
+# Ignore build artifacts
+dist/
+build/
+graphify-out/
