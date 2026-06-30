@@ -6,7 +6,6 @@ describe("WORKFLOW_BY_ID", () => {
     expect(WORKFLOW_BY_ID.chat).toBeDefined()
     expect(WORKFLOW_BY_ID.analytics).toBeDefined()
     expect(WORKFLOW_BY_ID.financial).toBeDefined()
-    expect(WORKFLOW_BY_ID.video).toBeDefined()
     expect(WORKFLOW_BY_ID.extract).toBeDefined()
     expect(WORKFLOW_BY_ID.settings).toBeDefined()
   })

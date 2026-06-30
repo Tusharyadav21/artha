@@ -4,14 +4,13 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from pgvector.sqlalchemy import Vector
+
 from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
     Index,
     Integer,
-    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -46,11 +45,9 @@ class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         String(255),
     )
 
-    # Better moved to object storage eventually
-    source_bytes: Mapped[bytes] = mapped_column(
-        LargeBinary,
-        nullable=False,
-        deferred=True,
+    minio_object_name: Mapped[str | None] = mapped_column(
+        String(1024),
+        nullable=True,
     )
 
     file_size: Mapped[int] = mapped_column(
@@ -91,89 +88,13 @@ class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="documents",
     )
 
-    chunks: Mapped[list[DocumentChunk]] = relationship(
-        back_populates="document",
-        cascade="all, delete-orphan",
-    )
+    # Chunks are now stored in Qdrant, so we do not have a relationship here.
 
     __table_args__ = (
         Index(
             "ix_documents_project_status",
             "project_id",
             "status",
-        ),
-    )
-
-
-class DocumentChunk(UUIDPrimaryKeyMixin, Base):
-    __tablename__ = "document_chunks"
-
-    document_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("documents.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-
-    chunk_index: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
-
-    content: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-    )
-
-    embedding: Mapped[list[float]] = mapped_column(
-        Vector(1024),
-        nullable=False,
-    )
-
-    section_heading: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
-
-    image_path: Mapped[str | None] = mapped_column(
-        String(1024),
-        nullable=True,
-    )
-
-    image_caption: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
-
-    metadata_: Mapped[dict] = mapped_column(
-        "metadata",
-        MutableDict.as_mutable(JSONB),
-        default=dict,
-        nullable=False,
-    )
-
-    document: Mapped[Document] = relationship(
-        back_populates="chunks",
-    )
-
-    __table_args__ = (
-        UniqueConstraint(
-            "document_id",
-            "chunk_index",
-            name="uq_document_chunk_index",
-        ),
-        Index(
-            "ix_document_chunks_document_id",
-            "document_id",
-        ),
-        Index(
-            "ix_document_chunks_embedding_cosine",
-            "embedding",
-            postgresql_using="ivfflat",
-            postgresql_ops={
-                "embedding": "vector_cosine_ops",
-            },
-            postgresql_with={
-                "lists": 100,
-            },
         ),
     )
 

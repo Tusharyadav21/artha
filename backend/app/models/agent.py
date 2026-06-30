@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from pgvector.sqlalchemy import Vector
+
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -159,5 +159,5 @@ class AgentMemory(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     metadata_: Mapped[dict] = mapped_column(
         "metadata", MutableDict.as_mutable(JSONB), default=dict, nullable=False
     )
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(1024))
+
     source: Mapped[str | None] = mapped_column(String(255))

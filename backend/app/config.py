@@ -17,6 +17,14 @@ class Settings(BaseSettings):
 
     database_url: str = Field(..., min_length=1, pattern=r"^postgresql\+asyncpg://.+$")
     redis_url: str = Field(..., min_length=1, pattern=r"^redis://[^\s]+$")
+    celery_broker_url: str = Field(default="redis://localhost:6379/1")
+    celery_result_backend: str = Field(default="redis://localhost:6379/2")
+    qdrant_url: str = Field(default="http://localhost:6333")
+    minio_url: str = Field(default="localhost:9000")
+    minio_access_key: str = Field(default="minioadmin")
+    minio_secret_key: str = Field(default="minioadmin")
+    minio_secure: bool = Field(default=False)
+    minio_bucket: str = Field(default="artha-documents")
 
     ollama_base_url: str = Field(default="http://host.docker.internal:11434")
     ollama_model_reasoner: str = Field(default="qwen2.5:7b")

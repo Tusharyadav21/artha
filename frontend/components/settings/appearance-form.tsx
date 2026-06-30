@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { CheckIcon, MonitorIcon, MoonIcon, SaveIcon, SunIcon } from "lucide-react"
+import { MonitorIcon, MoonIcon, SaveIcon, SunIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Select } from "@/components/ui/select"
