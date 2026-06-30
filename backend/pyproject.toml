@@ -2,52 +2,95 @@
 name = "agentic-rag-backend"
 version = "0.1.0"
 description = "Artha backend (FastAPI + LangGraph + Ollama)"
+authors = [
+    { name = "Tushar Yadav" },
+]
+readme = "README.md"
+license = { text = "MIT" }
+keywords = [
+    "fastapi",
+    "langgraph",
+    "rag",
+    "llm",
+    "agentic-ai",
+]
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "fastapi>=0.115",
-    "uvicorn[standard]>=0.32",
-    "pydantic>=2.9",
-    "pydantic-settings>=2.6",
-    "sqlalchemy[asyncio]>=2.0",
-    "asyncpg>=0.30",
-    "pgvector>=0.3",
-    "redis>=5.2",
-    "arq>=0.26",
-    "httpx>=0.27",
-    "langchain>=0.3",
-    "langchain-community>=0.3",
-    "langchain-ollama>=0.2",
-    "langgraph>=0.2",
+    "fastapi>=0.115,<0.116",
+    "uvicorn[standard]>=0.32,<1",
+    "pydantic>=2.9,<3",
+    "pydantic-settings>=2.6,<3",
+    "sqlalchemy[asyncio]>=2.0,<3",
+    "asyncpg>=0.30,<1",
+    "pgvector>=0.3,<1",
+    "redis>=5.2,<6",
+    "arq>=0.26,<1",
+    "httpx>=0.27,<1",
+    "langchain>=0.3,<1",
+    "langchain-community>=0.3,<1",
+    "langchain-ollama>=0.2,<1",
+    "langgraph>=0.2,<1",
     "langfuse>=2.50,<3",
-    "python-jose[cryptography]>=3.3",
-    "psycopg[binary]>=3.3",
-    "structlog>=24.4",
-    "sentence-transformers>=3.3",
-    "torch>=2.0",
-    "alembic>=1.18.4",
-    "python-multipart>=0.0.27",
-    "langgraph-checkpoint-postgres>=3.0.5",
-    "slowapi>=0.1.9",
-    "numpy>=2.4.4",
-    "tenacity>=8.5",
-    "markitdown[all]>=0.1.6",
-    "pymupdf>=1.24.1",
-    "pdfplumber>=0.11.0",
-    "pytesseract>=0.3.10",
-    "pdf2image>=1.17.0",
-    "instructor>=1.3.0",
-    "argon2-cffi>=23.1.0",
-    "surya-ocr>=0.7.0",
-    "litellm>=1.60.0",
+    "python-jose[cryptography]>=3.3,<4",
+    "structlog>=24.4,<25",
+    "sentence-transformers>=3.3,<4",
+    "torch>=2.0,<3",
+    "alembic>=1.18.4,<2",
+    "python-multipart>=0.0.27,<1",
+    "langgraph-checkpoint-postgres>=3.0.5,<4",
+    "slowapi>=0.1.9,<1",
+    "numpy>=2.4.4,<3",
+    "tenacity>=8.5,<9",
+    "markitdown[all]>=0.1.6,<1",
+    "pymupdf>=1.24.1,<2",
+    "pdfplumber>=0.11.0,<1",
+    "pytesseract>=0.3.10,<1",
+    "pdf2image>=1.17.0,<2",
+    "instructor>=1.3.0,<2",
+    "argon2-cffi>=23.1.0,<24",
+    "surya-ocr>=0.7.0,<1",
+    "litellm>=1.60.0,<2",
+    "orjson>=3.11,<4",
+    "prometheus-client>=0.23,<1",
+    "opentelemetry-api>=1.36,<2",
+    "opentelemetry-sdk>=1.36,<2",
+    "opentelemetry-instrumentation-fastapi>=0.57b0",
+    "opentelemetry-exporter-otlp>=1.36,<2",
+    "opentelemetry-instrumentation-sqlalchemy>=0.57b0",
+    "opentelemetry-instrumentation-httpx>=0.57b0",
+    "email-validator>=2.2,<3",
+    "rich>=14,<15",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3",
-    "pytest-asyncio>=0.24",
-    "pytest-cov>=6.1",
-    "ruff>=0.7",
-    "watchfiles>=0.24.0",
+    "watchfiles>=0.24,<1",
+]
+lint = [
+    "ruff>=0.7,<1",
+    "basedpyright>=1.29,<2",
+]
+test = [
+    "pytest>=8.3,<9",
+    "pytest-cov>=6.1,<7",
+    "pytest-asyncio>=0.24,<1",
+    "pytest-mock>=3.14,<4",
+    "pytest-xdist>=3.6,<4",
+    "respx>=0.22,<1",
+    "faker>=37,<38",
+    "factory-boy>=3.3,<4",
+    "freezegun>=1.5,<2",
+]
+docs = [
+    "mkdocs-material>=9.6,<10",
+    "mkdocstrings[python]>=0.29,<1",
+]
+benchmark = [
+    "pytest-benchmark>=5.1,<6",
+]
+security = [
+    "bandit>=1.8,<2",
+    "pip-audit>=2.9,<3",
 ]
 
 [tool.uv.sources]
@@ -65,17 +108,38 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP", "N"]
+select = [
+    "E", "F", "I", "UP", "B", "SIM", "RET", "RUF",
+    "N", "ASYNC", "C4", "T20", "PIE", "PERF",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.basedpyright]
+include = ["app"]
+typeCheckingMode = "standard"
+reportMissingTypeStubs = "warning"
+reportUnusedImport = "error"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+testpaths = ["tests"]
 pythonpath = ["."]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=app",
+    "--cov-report=term-missing",
+]
 
-[tool.ty.rules]
-unresolved-import = "ignore"
-invalid-method-override = "ignore"
-unresolved-attribute = "ignore"
-invalid-argument-type = "ignore"
-invalid-assignment = "ignore"
-not-iterable = "ignore"
-invalid-return-type = "ignore"
+[tool.coverage.run]
+branch = true
+source = ["app"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
