@@ -9,9 +9,9 @@
     "render": "remotion render src/index.ts Short out/video.mp4"
   },
   "dependencies": {
-    "remotion": "4.0.211",
-    "@remotion/cli": "4.0.211",
-    "@remotion/renderer": "4.0.211",
+    "remotion": "4.0.410",
+    "@remotion/cli": "4.0.484",
+    "@remotion/renderer": "4.0.484",
     "shiki": "^1.22.2",
     "lucide-react": "^0.454.0",
     "zod": "^3.23.8"
