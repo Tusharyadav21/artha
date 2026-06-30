@@ -18,7 +18,10 @@ async def get_ollama_client() -> LiteLLMClient:
     """Backward-compat — returns a LiteLLMClient instance."""
     global _ollama_client
     if _ollama_client is None:
-        _ollama_client = LiteLLMClient(model=get_settings().ollama_model_reasoner)
+        _ollama_client = LiteLLMClient(
+            model=get_settings().ollama_model_reasoner,
+            base_url=get_settings().ollama_base_url
+        )
     return _ollama_client
 
 

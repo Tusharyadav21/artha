@@ -1,19 +1,20 @@
 from typing import Annotated
 from uuid import UUID
 
-from arq import create_pool
-from arq.connections import RedisSettings
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from minio import Minio
 
 from app.config import get_settings
 from app.models.enums import DocumentStatus
 from app.models.schemas.documents import DocumentRead, PaginatedDocuments
 from app.models.user import User
 from app.services.ingestion import sha256_bytes
+from app.services.documents import DocumentService
 from app.services.repositories.documents import DocumentRepository
 from app.services.repositories.projects import ProjectRepository
 from app.utils.database import get_db
+from app.utils.minio_client import minio_client
 from app.utils.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/projects/{project_id}/documents", tags=["documents"])
@@ -112,30 +113,9 @@ async def upload_document(
     if existing is not None:
         return DocumentRead.model_validate(existing)
 
-    document = await repository.create(
-        project_id=project_id,
-        filename=file.filename or "upload",
-        mime_type=file.content_type,
-        source_bytes=content,
-        content_sha256=content_sha256,
-    )
-
-    # Resolve default before enqueuing so worker logs show the actual model name
-    if embed_model is None:
-        embed_model = get_settings().ollama_model_embed
-
-    redis = await create_pool(RedisSettings.from_dsn(get_settings().redis_url))
-    try:
-        job = await redis.enqueue_job("process_document", str(document.id), embed_model=embed_model)
-        if job is None:
-            await repository.set_status(
-                document,
-                DocumentStatus.FAILED,
-                error_message="Could not enqueue document processing job",
-                processed=True,
-            )
-    finally:
-        await redis.close()
+    # Delegate upload and processing task dispatching to DocumentService
+    doc_service = DocumentService(minio_client, repository)
+    document = await doc_service.upload_document(project_id, file)
 
     return DocumentRead.model_validate(document)
 
@@ -152,12 +132,24 @@ async def get_document_file(
     document = await repo.get_for_project(document_id, project_id)
     if not document:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-    if not document.source_bytes:
+    if not document.minio_object_name:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="File content not available",
         )
+        
+    try:
+        response = minio_client.get_object(
+            bucket_name=get_settings().minio_bucket, 
+            object_name=document.minio_object_name
+        )
+        content = response.read()
+        response.close()
+        response.release_conn()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch from storage: {e}")
+
     return Response(
-        content=document.source_bytes,
+        content=content,
         media_type=document.mime_type or "application/octet-stream",
         headers={"Content-Disposition": f'inline; filename="{document.filename}"'},
     )

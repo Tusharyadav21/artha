@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.models.user import Project, UserMemory
 from app.services.llm_client import BaseLLMClient, LiteLLMClient
+from app.services.rag_engine import rag_engine
 from app.services.repositories.conversations import ConversationRepository
 from app.services.repositories.documents import DocumentRepository
 from app.services.reranker import Reranker
@@ -193,31 +194,26 @@ def build_rag_graph(db: AsyncSession, llm_client: BaseLLMClient):
         if hyde_text := state.hyde_text:
             embed_text = f"{state.search_query}\n\n{hyde_text}"
 
-        query_embedding = await llm_client.embed(embed_text)
-        rows = await DocumentRepository(db).search_chunks(
-            state.project_id,
-            query_embedding,
-            query_text=state.search_query,
-            limit=chunk_limit * 3,
-            document_ids=state.document_ids,
-        )
+        rows = await rag_engine.retrieve(embed_text, limit=chunk_limit * 3)
         seen_parents: set[str] = set()
         sources: list[Source] = []
-        for chunk, document, score in rows:
-            parent_content = (chunk.metadata_ or {}).get("parent_content")
-            dedup_key = parent_content if parent_content else chunk.content
+        for doc in rows:
+            # rag_engine returns dicts with 'content' and 'score' and ideally metadata
+            # We will use mock/defaults since RagEngine is a skeleton right now
+            content = doc.get("content", "")
+            score = doc.get("score", 0.0)
+            parent_content = None
+            
+            dedup_key = parent_content if parent_content else content
             if dedup_key in seen_parents:
                 continue
             seen_parents.add(dedup_key)
 
             sources.append(Source(
-                document_id=str(document.id),
-                filename=document.filename,
-                content=chunk.content,
+                document_id="mock_id",
+                filename="mock_file",
+                content=content,
                 score=score,
-                parent_content=parent_content,
-                image_path=chunk.image_path,
-                image_caption=chunk.image_caption,
             ))
         return state.model_copy(update={
             "sources": sources,

@@ -6,15 +6,9 @@ from logging.handlers import RotatingFileHandler
 
 import structlog
 
-
 def configure_logging(level: str = "INFO") -> None:
     warnings.filterwarnings("ignore", category=UserWarning, module="langgraph")
     warnings.filterwarnings("ignore", category=DeprecationWarning, module="langgraph")
-    try:
-        from langchain_core._api.deprecation import LangChainPendingDeprecationWarning
-        warnings.filterwarnings("ignore", category=LangChainPendingDeprecationWarning)
-    except ImportError:
-        pass
 
     log_level = getattr(logging, level.upper(), logging.INFO)
 
@@ -23,26 +17,34 @@ def configure_logging(level: str = "INFO") -> None:
     logging.getLogger("uvicorn").setLevel(logging.INFO)
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+    logging.getLogger("dishka").setLevel(logging.WARNING)
 
-    processors = [
+    shared_processors = [
         structlog.contextvars.merge_contextvars,
-        structlog.processors.add_log_level,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),
-        structlog.dev.set_exc_info,
-        structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S", utc=False),
+        structlog.processors.format_exc_info,
     ]
 
     env = os.getenv("ENVIRONMENT", "development")
+    
     if env == "production":
-        processors.append(structlog.processors.JSONRenderer())
+        processors = shared_processors + [
+            structlog.processors.dict_tracebacks,
+            structlog.processors.JSONRenderer(),
+        ]
     else:
-        processors.append(structlog.dev.ConsoleRenderer(colors=True))
+        processors = shared_processors + [
+            structlog.dev.ConsoleRenderer(colors=True),
+        ]
 
     structlog.configure(
         processors=processors,
-        wrapper_class=structlog.make_filtering_bound_logger(log_level),
-        context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(),
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
 
