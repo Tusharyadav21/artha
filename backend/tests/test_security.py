@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from src.auth.security import (
+from app.utils.security import (
     create_access_token,
     decode_access_token,
     hash_password,

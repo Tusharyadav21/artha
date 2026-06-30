@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.schemas.auth import UserUpdate
+from app.models.schemas.auth import UserUpdate
 
 
 def test_user_update_normalizes_blank_display_name() -> None:

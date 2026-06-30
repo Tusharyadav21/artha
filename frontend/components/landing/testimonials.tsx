@@ -1,9 +1,9 @@
 "use client"
 
-import * as React from "react"
 import { motion } from "framer-motion"
 import { Quote } from "lucide-react"
 import { SectionHeader } from "./section-header"
+import { revealContainer, revealItem } from "@/lib/motion"
 
 const testimonials = [
   {
@@ -30,23 +30,6 @@ const testimonials = [
 ]
 
 export function Testimonials() {
-  const containerVariants = {
-    visible: {
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 24 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.8 },
-    },
-  }
-
   return (
     <section className="relative px-6 py-20 lg:px-8">
       <div className="mx-auto max-w-6xl">
@@ -56,7 +39,7 @@ export function Testimonials() {
         />
 
         <motion.div
-          variants={containerVariants}
+          variants={revealContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
@@ -65,7 +48,7 @@ export function Testimonials() {
           {testimonials.map((testimonial, index) => (
             <motion.div
               key={index}
-              variants={itemVariants}
+              variants={revealItem}
               className="group rounded-lg border border-border/50 bg-card/50 p-8 backdrop-blur transition-all hover:border-primary/50 hover:bg-card/80"
             >
               <Quote className="h-5 w-5 text-primary/40" />

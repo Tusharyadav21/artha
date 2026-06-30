@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { ComponentProps } from "react"
 import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 import { cn } from "@/lib/utils"
 
@@ -67,7 +67,7 @@ function DropdownMenuItem({ className, ...props }: MenuPrimitive.Item.Props) {
   )
 }
 
-function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<"div">) {
+function DropdownMenuSeparator({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
       data-slot="dropdown-menu-separator"

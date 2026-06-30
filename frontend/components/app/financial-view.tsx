@@ -1,21 +1,20 @@
 "use client"
 
-import * as React from "react"
+import { DragEvent, useRef, useState } from "react"
 import { FileTextIcon, UploadIcon, Loader2Icon, TableIcon, AlertCircleIcon } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { parseTransactions, parseTableData, formatAmount, type Transaction } from "@/lib/financial/parser"
 
 export function FinancialView() {
-  const [transactions, setTransactions] = React.useState<Transaction[]>([])
-  const [rawText, setRawText] = React.useState("")
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState("")
-  const [fileName, setFileName] = React.useState("")
-  const inputRef = React.useRef<HTMLInputElement>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [rawText, setRawText] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [fileName, setFileName] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (file: File) => {
     if (!file || file.type !== "application/pdf") {
@@ -34,7 +33,7 @@ export function FinancialView() {
 
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise
       let fullText = ""
-      let allItems: Array<{ str: string; x: number; y: number; width: number; height: number }> = []
+      const allItems: Array<{ str: string; x: number; y: number; width: number; height: number }> = []
 
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i)
@@ -75,7 +74,7 @@ export function FinancialView() {
     }
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent) => {
     e.preventDefault()
     const file = e.dataTransfer.files[0]
     if (file) handleFile(file)
@@ -179,19 +178,19 @@ export function FinancialView() {
                       key={i}
                       className={cn(
                         "border-b border-border/50 transition-colors hover:bg-muted/30",
-                        tx.debit && "bg-red-500/5"
+                        tx.debit && "bg-status-danger/5"
                       )}
                     >
                       <td className="px-4 py-2.5 font-medium text-foreground whitespace-nowrap">{tx.date}</td>
                       <td className="px-4 py-2.5 text-muted-foreground max-w-xs truncate">{tx.description}</td>
-                      <td className="px-4 py-2.5 text-right font-medium tabular-nums text-red-500">
-                        {tx.debit != null ? formatAmount(tx.debit) : "—"}
+                      <td className="px-4 py-2.5 text-right font-medium tabular-nums text-status-danger">
+                        {tx.debit !== null ? formatAmount(tx.debit) : "—"}
                       </td>
-                      <td className="px-4 py-2.5 text-right font-medium tabular-nums text-green-600">
-                        {tx.credit != null ? formatAmount(tx.credit) : "—"}
+                      <td className="px-4 py-2.5 text-right font-medium tabular-nums text-status-success">
+                        {tx.credit !== null ? formatAmount(tx.credit) : "—"}
                       </td>
                       <td className="px-4 py-2.5 text-right font-medium tabular-nums text-muted-foreground">
-                        {tx.balance != null ? formatAmount(tx.balance) : "—"}
+                        {tx.balance !== null ? formatAmount(tx.balance) : "—"}
                       </td>
                     </tr>
                   ))}
@@ -224,5 +223,4 @@ export function FinancialView() {
     </div>
   )
 }
-
 

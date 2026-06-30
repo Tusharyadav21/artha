@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { ChangeEvent, useMemo, useState } from "react"
 import { UploadIcon, SaveIcon } from "lucide-react"
 
 import { useProjects } from "@/hooks/use-projects"
@@ -42,21 +42,21 @@ export function DocumentLibraryDialog({
     uploadDocument,
   } = useDocuments()
 
-  const [showScopedOnly, setShowScopedOnly] = React.useState(false)
+  const [showScopedOnly] = useState(false)
 
-  const filteredDocuments = React.useMemo(() => {
+  const filteredDocuments = useMemo(() => {
     if (showScopedOnly) {
       return documents.filter((doc) => selectedDocumentIds.includes(doc.id))
     }
     return documents
   }, [documents, selectedDocumentIds, showScopedOnly])
 
-  const completedDocuments = React.useMemo(() => {
+  const completedDocuments = useMemo(() => {
     return filteredDocuments.filter((doc) => doc.status === "completed")
   }, [filteredDocuments])
 
   // fallow-ignore-next-line complexity
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !activeProject) {
       return

@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 
 import { Skeleton } from "@/components/ui/skeleton"
@@ -10,7 +10,7 @@ import { apiFetch, type User } from "@/lib/api"
 export function RootRedirect() {
   const router = useRouter()
 
-  React.useEffect(() => {
+  useEffect(() => {
     const token = window.localStorage.getItem(TOKEN_KEY)
     if (!token) {
       router.replace("/auth")

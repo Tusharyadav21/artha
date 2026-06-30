@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
 
 import { useProjects } from "@/hooks/use-projects"
@@ -44,20 +44,20 @@ export function ChatView() {
     conversationsTotal,
   } = useChat()
 
-  const [centerTab, setCenterTab] = React.useState<"chat" | "sources" | "history" | "prompts">("chat")
-  const [isCanvasMode, setIsCanvasMode] = React.useState(false)
-  const [expandedSourceId, setExpandedSourceId] = React.useState<string | null>(null)
-  const [question, setQuestion] = React.useState("")
-  const [webSearchEnabled, setWebSearchEnabled] = React.useState(false)
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const formRef = React.useRef<HTMLFormElement>(null)
+  const [centerTab, setCenterTab] = useState<"chat" | "sources" | "history" | "prompts">("chat")
+  const isCanvasMode = false
+  const [expandedSourceId, setExpandedSourceId] = useState<string | null>(null)
+  const [question, setQuestion] = useState("")
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
-  const activeInContextDocuments = React.useMemo(() => {
+  const activeInContextDocuments = useMemo(() => {
     const completedDocs = documents.filter((doc) => doc.status === "completed")
     return completedDocs.filter((doc) => selectedDocumentIds.includes(doc.id))
   }, [documents, selectedDocumentIds])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!question.trim()) return
     const currentQuestion = question
@@ -70,7 +70,7 @@ export function ChatView() {
     setQuestion(text)
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > MAX_UPLOAD_SIZE) {

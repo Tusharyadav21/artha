@@ -1,7 +1,6 @@
 "use client"
 
-import * as React from "react"
-
+import { PropsWithChildren, createContext, startTransition, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { ACTIVE_PROJECT_KEY } from "@/lib/app-storage"
 import { type Project } from "@/lib/api"
@@ -18,23 +17,23 @@ interface ProjectsContextValue {
   updateProjectSettings: (systemPrompt: string | null) => Promise<void>
 }
 
-const ProjectsContext = React.createContext<ProjectsContextValue | null>(null)
+const ProjectsContext = createContext<ProjectsContextValue | null>(null)
 
 function readStoredProjectId() {
   if (typeof window === "undefined") return null
   return window.localStorage.getItem(ACTIVE_PROJECT_KEY)
 }
 
-export function ProjectsProvider({ children }: React.PropsWithChildren) {
+export function ProjectsProvider({ children }: PropsWithChildren) {
   const { token, authedFetch, isLoadingSession, refreshSession } = useAuth()
-  const [projects, setProjects] = React.useState<Project[]>([])
-  const [activeProjectId, setActiveProjectId] = React.useState<string | null>(null)
-  const [isCreatingProject, setIsCreatingProject] = React.useState(false)
-  const [isSavingProject, setIsSavingProject] = React.useState(false)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
+  const [isCreatingProject, setIsCreatingProject] = useState(false)
+  const [isSavingProject, setIsSavingProject] = useState(false)
 
   const activeProject = projects.find((p) => p.id === activeProjectId)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!token || isLoadingSession) return
     const storedId = readStoredProjectId()
     authedFetch<Project[]>("/api/projects").then((nextProjects) => {
@@ -47,7 +46,16 @@ export function ProjectsProvider({ children }: React.PropsWithChildren) {
     })
   }, [token, isLoadingSession, authedFetch, refreshSession])
 
-  const createProject = React.useCallback(
+  const selectProject = useCallback(async (projectId: string) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(ACTIVE_PROJECT_KEY, projectId)
+    }
+    startTransition(() => {
+      setActiveProjectId(projectId)
+    })
+  }, [])
+
+  const createProject = useCallback(
     async (name: string) => {
       const trimmedName = name.trim()
       if (!trimmedName) return
@@ -68,19 +76,10 @@ export function ProjectsProvider({ children }: React.PropsWithChildren) {
         setIsCreatingProject(false)
       }
     },
-    [authedFetch]
+    [authedFetch, selectProject]
   )
 
-  const selectProject = React.useCallback(async (projectId: string) => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(ACTIVE_PROJECT_KEY, projectId)
-    }
-    React.startTransition(() => {
-      setActiveProjectId(projectId)
-    })
-  }, [])
-
-  const updateProjectSettings = React.useCallback(
+  const updateProjectSettings = useCallback(
     async (systemPrompt: string | null) => {
       if (!activeProjectId) return
 
@@ -103,7 +102,7 @@ export function ProjectsProvider({ children }: React.PropsWithChildren) {
     [activeProjectId, authedFetch]
   )
 
-  const value = React.useMemo<ProjectsContextValue>(
+  const value = useMemo<ProjectsContextValue>(
     () => ({
       projects,
       activeProjectId,
@@ -130,7 +129,7 @@ export function ProjectsProvider({ children }: React.PropsWithChildren) {
 }
 
 export function useProjects() {
-  const value = React.useContext(ProjectsContext)
+  const value = useContext(ProjectsContext)
   if (!value) throw new Error("useProjects must be used inside ProjectsProvider")
   return value
 }

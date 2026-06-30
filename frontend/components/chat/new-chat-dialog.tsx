@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { FormEvent, useEffect, useState } from "react"
 import { MessageSquarePlusIcon, CheckIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -61,15 +61,15 @@ function NewChatDialogBody({
   const { listProjectDocuments } = useDocuments()
   const { prepareNewChat: onPrepareNewChat } = useChat()
 
-  const [projectId, setProjectId] = React.useState(activeProjectId ?? projects[0]?.id ?? "")
-  const [scopeMode, setScopeMode] = React.useState<"clear" | "remember" | "all-completed">(
+  const [projectId, setProjectId] = useState(activeProjectId ?? projects[0]?.id ?? "")
+  const [scopeMode, setScopeMode] = useState<"clear" | "remember" | "all-completed">(
     initialScopeMode
   )
-  const [documents, setDocuments] = React.useState<DocumentItem[]>([])
-  const [isLoadingDocuments, setIsLoadingDocuments] = React.useState(false)
-  const [checkedDocumentIds, setCheckedDocumentIds] = React.useState<string[]>([])
+  const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false)
+  const [checkedDocumentIds, setCheckedDocumentIds] = useState<string[]>([])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!projectId) return
 
     let isCancelled = false
@@ -100,7 +100,7 @@ function NewChatDialogBody({
     return () => { isCancelled = true }
   }, [activeProjectId, listProjectDocuments, projectId, scopeMode, selectedDocumentIds])
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!projectId) return
 
@@ -179,7 +179,8 @@ function NewChatDialogBody({
                       {documents.map((document) => {
                         const isChecked = checkedDocumentIds.includes(document.id)
                         return (
-                          <button
+                          <Button
+                            variant="ghost"
                             key={document.id}
                             type="button"
                             className={cn(
@@ -200,7 +201,7 @@ function NewChatDialogBody({
                               <p className="truncate text-xs font-medium">{document.filename}</p>
                             </div>
                             {isChecked && <CheckIcon className="ml-2 size-3 shrink-0" />}
-                          </button>
+                          </Button>
                         )
                       })}
                     </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useState } from "react"
 import { SaveIcon } from "lucide-react"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -17,7 +17,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ createdAt, defaultDisplayName, email, isSavingSettings, onSave }: ProfileFormProps) {
-  const [displayName, setDisplayName] = React.useState(defaultDisplayName)
+  const [displayName, setDisplayName] = useState(defaultDisplayName)
 
   return (
     <form

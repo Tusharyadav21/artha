@@ -1,3 +1,4 @@
+import { ReactNode } from "react"
 import "./globals.css"
 import { ThemeProvider } from "@/components/shared/theme-provider"
 import { Toaster } from "@/components/ui/toast"
@@ -5,7 +6,7 @@ import { Toaster } from "@/components/ui/toast"
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: ReactNode
 }>) {
   return (
     <html

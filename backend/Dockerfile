@@ -26,7 +26,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-editable
 
 # Copy application source
-COPY src/ src/
+COPY app/ app/
 COPY alembic/ alembic/
 COPY alembic.ini .
 
@@ -43,7 +43,7 @@ RUN apt-get update && \
 
 # Copy the virtual environment and app from builder
 COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/src /app/src
+COPY --from=builder /app/app /app/app
 COPY --from=builder /app/alembic /app/alembic
 COPY --from=builder /app/alembic.ini /app/alembic.ini
 
@@ -58,4 +58,4 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
     CMD ["python", "-c", "import json, sys, urllib.request; data = json.load(urllib.request.urlopen('http://localhost:8000/health/ready')); sys.exit(0 if data.get('status') == 'healthy' else 1)"]
 
 # Run the FastAPI app via uvicorn
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

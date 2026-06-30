@@ -4,7 +4,7 @@ from zipfile import ZipFile
 
 import pytest
 
-from src.services.ingestion import (
+from app.services.ingestion import (
     chunk_text_hierarchical,
     embed_chunks_enriched,
     parse_document_bytes,
@@ -63,7 +63,7 @@ def test_chunk_text_hierarchical_no_filename_uses_default_chunking() -> None:
     text = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph."
     chunks = chunk_text_hierarchical(text, child_words=5, parent_words=20)
     assert len(chunks) >= 1
-    child, _ = chunks[0]
+    child, _, _ = chunks[0]
     assert "First paragraph" in child
 
 
@@ -72,7 +72,7 @@ def test_chunk_text_hierarchical_csv_large() -> None:
     csv_text = f"id,name,role\n{rows}"
     chunks = chunk_text_hierarchical(csv_text, filename="users.csv")
     assert len(chunks) > 1
-    for child, _parent in chunks:
+    for child, _parent, _ in chunks:
         assert "Column Headers: id,name,role" in child
 
 
@@ -84,7 +84,7 @@ def test_chunk_text_hierarchical_csv() -> None:
     csv_text = "id,name,role\n1,Alice,User\n2,Bob,Admin\n3,Charlie,Staff"
     chunks = chunk_text_hierarchical(csv_text, filename="users.csv")
     assert len(chunks) == 1
-    child, parent = chunks[0]
+    child, parent, _ = chunks[0]
     assert "Column Headers: id,name,role" in child
     assert "1,Alice,User" in child
     assert "2,Bob,Admin" in child
@@ -95,27 +95,31 @@ def test_chunk_text_hierarchical_markdown() -> None:
     md_text = "# Project\n## Setup\nThis is configuration content."
     chunks = chunk_text_hierarchical(md_text, filename="docs.md", child_words=20)
     assert len(chunks) == 1
-    child, parent = chunks[0]
+    child, parent, _ = chunks[0]
     assert "[Context: Project > Setup]" in child
     assert "This is configuration content." in child
     assert "# Project > Setup" in parent
 
 
 @pytest.mark.asyncio
-@patch("src.services.ingestion.OllamaClient")
-async def test_embed_chunks_enriched(mock_ollama_class) -> None:
+@patch("app.services.ingestion.get_ollama_client")
+async def test_embed_chunks_enriched(mock_get_client) -> None:
     mock_ollama = AsyncMock()
     return_val = '{"questions": ["What is this?", "Who is this?"], "summary": "A test chunk."}'
     mock_ollama.generate.return_value = return_val
     mock_ollama.embed.return_value = [0.1] * 768
-    mock_ollama_class.return_value = mock_ollama
 
-    chunks = [("Child text content", "Parent text content")]
+    async def _get_client() -> AsyncMock:
+        return mock_ollama
+    mock_get_client.side_effect = _get_client
+
+    child_text = "Child text content with enough characters to pass the quality gate."
+    chunks = [(child_text, "Parent text content", None)]
     result = await embed_chunks_enriched(chunks, embed_model="mock-model")
 
     assert len(result) == 1
     child, embedding, metadata = result[0]
-    assert child == "Child text content"
+    assert child == child_text
     assert len(embedding) == 768
     assert metadata["summary"] == "A test chunk."
     assert metadata["hypothetical_questions"] == ["What is this?", "Who is this?"]
@@ -128,37 +132,51 @@ async def test_embed_chunks_enriched(mock_ollama_class) -> None:
 
 
 @pytest.mark.asyncio
-@patch("src.services.ingestion.OllamaClient")
-async def test_embed_chunks_enriched_recovers_from_generation_failure(mock_ollama_class) -> None:
+@patch("app.services.ingestion.get_ollama_client")
+async def test_embed_chunks_enriched_recovers_from_generation_failure(mock_get_client) -> None:
     mock_ollama = AsyncMock()
     mock_ollama.generate.side_effect = RuntimeError("Ollama down")
     mock_ollama.embed.return_value = [0.2] * 768
-    mock_ollama_class.return_value = mock_ollama
 
-    chunks = [("Fallback chunk", "Parent")]
+    async def _get_client() -> AsyncMock:
+        return mock_ollama
+    mock_get_client.side_effect = _get_client
+
+    chunks = [
+        ("Fallback chunk with enough characters to be high quality for testing.", "Parent", None),
+    ]
     result = await embed_chunks_enriched(chunks, embed_model="mock-model")
 
     assert len(result) == 1
     child, embedding, metadata = result[0]
-    assert child == "Fallback chunk"
+    assert child == "Fallback chunk with enough characters to be high quality for testing."
     assert metadata["hypothetical_questions"] == []
     assert metadata["summary"] == ""
 
     mock_ollama.embed.assert_called_once()
     call_args = mock_ollama.embed.call_args[0][0]
-    assert "Questions: " in call_args
-    assert "Content: Fallback chunk" in call_args
+    assert "Fallback chunk with enough characters" in call_args
+    assert "Questions: " not in call_args
 
 
 @pytest.mark.asyncio
-@patch("src.services.ingestion.OllamaClient")
-async def test_embed_chunks_enriched_recovers_from_embedding_failure(mock_ollama_class) -> None:
+@patch("app.services.ingestion.get_ollama_client")
+async def test_embed_chunks_enriched_recovers_from_embedding_failure(mock_get_client) -> None:
     mock_ollama = AsyncMock()
     mock_ollama.generate.return_value = '{"questions": ["Q1"], "summary": "Sum"}'
     mock_ollama.embed.side_effect = [RuntimeError("Ollama timeout"), [0.3] * 768]
-    mock_ollama_class.return_value = mock_ollama
 
-    chunks = [("Child text", "Parent text")]
+    async def _get_client() -> AsyncMock:
+        return mock_ollama
+    mock_get_client.side_effect = _get_client
+
+    chunks = [
+        (
+            "Child text that is long enough to pass the quality gate for testing.",
+            "Parent text",
+            None,
+        ),
+    ]
     result = await embed_chunks_enriched(chunks, embed_model="mock-model")
 
     assert len(result) == 1

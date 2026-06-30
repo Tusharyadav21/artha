@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { FormEvent, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -27,19 +27,15 @@ interface AuthDialogProps {
 // fallow-ignore-next-line complexity
 export function AuthDialog({ open, onOpenChange, initialMode = "login" }: AuthDialogProps) {
   const router = useRouter()
-  const [email, setEmail] = React.useState("tusharydv2910@gmail.com")
-  const [displayName, setDisplayName] = React.useState("Tushar Yadav")
-  const [password, setPassword] = React.useState("Fino@2026")
-  const [isRegistering, setIsRegistering] = React.useState(initialMode === "register")
-  const [isForgotPassword, setIsForgotPassword] = React.useState(false)
-  const [isLoading, setIsLoading] = React.useState(false)
-
-  React.useEffect(() => {
-    setIsRegistering(initialMode === "register")
-  }, [initialMode])
+  const [email, setEmail] = useState("tusharydv2910@gmail.com")
+  const [displayName, setDisplayName] = useState("Tushar Yadav")
+  const [password, setPassword] = useState("Fino@2026")
+  const [isRegistering, setIsRegistering] = useState(() => initialMode === "register")
+  const [isForgotPassword, setIsForgotPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   // fallow-ignore-next-line complexity
-  async function handleAuth(event: React.FormEvent<HTMLFormElement>) {
+  async function handleAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsLoading(true)
 
@@ -69,7 +65,7 @@ export function AuthDialog({ open, onOpenChange, initialMode = "login" }: AuthDi
     }
   }
 
-  async function handleForgotPassword(event: React.FormEvent<HTMLFormElement>) {
+  async function handleForgotPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsLoading(true)
 
@@ -152,14 +148,15 @@ export function AuthDialog({ open, onOpenChange, initialMode = "login" }: AuthDi
 
           {!isForgotPassword && !isRegistering && (
             <div className="flex justify-end">
-              <button
+              <Button
                 type="button"
+                variant="link"
                 className="text-xs text-primary hover:underline disabled:opacity-50"
                 onClick={() => setIsForgotPassword(true)}
                 disabled={isLoading}
               >
                 Forgot password?
-              </button>
+              </Button>
             </div>
           )}
 
@@ -175,7 +172,7 @@ export function AuthDialog({ open, onOpenChange, initialMode = "login" }: AuthDi
 
           <Button
             type="button"
-            variant="ghost"
+            variant="link"
             onClick={() => {
               if (isForgotPassword) {
                 setIsForgotPassword(false)
