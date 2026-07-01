@@ -239,7 +239,7 @@ export function parseTableData(items: Array<{ str: string; x: number; y: number;
     rows.push(currentRow.sort((a, b) => a.x - b.x))
   }
 
-  const textRows = rows.map((row) => row.map((t) => t.str).join(" "))
+  const _textRows = rows.map((row) => row.map((t) => t.str).join(" "))
 
   const amountColIndices = findAmountColumns(rows)
   const results: Transaction[] = []

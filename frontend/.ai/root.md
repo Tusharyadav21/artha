@@ -1,6 +1,6 @@
 # AI Collaboration System
 
-This is the central entry point for all AI agents working on the Artha application.
+This is the central entry point for all AI agents working on the Artha frontend application.
 To avoid context bloat, our engineering standards and documentation are modularized.
 
 ## Available Context
@@ -10,7 +10,7 @@ Read these files based on the task you are performing:
 - **[.ai/agent-rules.md](agent-rules.md)**: Universal behavioral rules for all AI agents (Read this first).
 - **[.ai/nextjs-standards.md](nextjs-standards.md)**: Next.js v16.2 App Router best practices, conventions, and requirements.
 - **[.ai/architecture.md](architecture.md)**: Project folder structure, data models, and API interactions.
-- **[.ai/features/betterauth.md](features/betterauth.md)**: BetterAuth Best Practices for authentication.
+- **[.ai/features/betterauth.md](features/betterauth.md)**: Authentication flow (JWT against FastAPI backend — NOT BetterAuth).
 
 ## Core Directives
 

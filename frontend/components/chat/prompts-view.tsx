@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { FormEvent } from "react"
 import { SaveIcon } from "lucide-react"
 
 import { Textarea } from "@/components/ui/textarea"
@@ -13,7 +13,7 @@ interface PromptsViewProps {
 }
 
 export function PromptsView({ activeProject, isSavingProject, onSaveSystemPrompt }: PromptsViewProps) {
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const text = new FormData(event.currentTarget).get("systemPrompt") as string
     onSaveSystemPrompt(text)

@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import { ArrowLeftIcon, FileTextIcon, LibraryIcon, UploadIcon, Trash2Icon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -143,8 +142,8 @@ export function SourcesView({
                             <div className="flex items-center gap-1.5">
                               {isProcessing && (
                                 <>
-                                  <div className="size-1.5 rounded-full bg-blue-500 animate-pulse" />
-                                  <span className="text-[10px] font-semibold text-blue-400">Indexing</span>
+                                  <div className="size-1.5 rounded-full bg-status-info animate-pulse" />
+                                  <span className="text-[10px] font-semibold text-status-info">Indexing</span>
                                 </>
                               )}
                               {doc.status === "completed" && (

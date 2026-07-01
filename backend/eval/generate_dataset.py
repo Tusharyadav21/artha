@@ -1,0 +1,356 @@
+#!/usr/bin/env python3
+"""Generate the Artha eval dataset. Run: python3 backend/eval/generate_dataset.py"""
+import json
+
+dataset = []
+
+# ── direct_lookup (10) ──
+dataset.append({"id": "artha-eval-001", "category": "direct_lookup", "difficulty": "easy",
+  "question": "What was the total revenue for Q3 2024?",
+  "reference_answer": "The total revenue for Q3 2024 was $12.4 million, driven by a 22% increase in subscription services and a 15% growth in enterprise licensing.",
+  "source_docs": ["q3_2024_financial_report.pdf"],
+  "key_facts": ["$12.4 million", "Q3 2024", "subscription services 22%", "enterprise licensing 15%"],
+  "notes": "Single-chunk retrieval from quarterly report"})
+
+dataset.append({"id": "artha-eval-002", "category": "direct_lookup", "difficulty": "easy",
+  "question": "Who is the current CEO of the company?",
+  "reference_answer": "The current CEO is Sarah Chen, who assumed the role in January 2023 after serving as COO for four years.",
+  "source_docs": ["company_overview_2024.pdf"],
+  "key_facts": ["Sarah Chen", "CEO", "January 2023"],
+  "notes": "Simple factual lookup"})
+
+dataset.append({"id": "artha-eval-003", "category": "direct_lookup", "difficulty": "easy",
+  "question": "What is the company net profit margin for fiscal year 2024?",
+  "reference_answer": "The net profit margin for FY2024 was 18.7%, up from 14.2% in FY2023, driven by operational efficiency improvements and lower customer acquisition costs.",
+  "source_docs": ["fy2024_annual_report.pdf"],
+  "key_facts": ["18.7%", "FY2024", "14.2% FY2023"],
+  "notes": "Single-chunk financial metric"})
+
+dataset.append({"id": "artha-eval-004", "category": "direct_lookup", "difficulty": "easy",
+  "question": "How many employees does the company have as of December 2024?",
+  "reference_answer": "As of December 2024, the company employs 3,247 people across 12 offices worldwide.",
+  "source_docs": ["company_overview_2024.pdf"],
+  "key_facts": ["3,247", "12 offices"],
+  "notes": "Employee count lookup"})
+
+dataset.append({"id": "artha-eval-005", "category": "direct_lookup", "difficulty": "easy",
+  "question": "What is the ticker symbol and exchange where the company is listed?",
+  "reference_answer": "The company is listed on the NASDAQ under the ticker symbol ARTH.",
+  "source_docs": ["company_overview_2024.pdf"],
+  "key_facts": ["NASDAQ", "ARTH"],
+  "notes": "Basic fact lookup"})
+
+dataset.append({"id": "artha-eval-006", "category": "direct_lookup", "difficulty": "easy",
+  "question": "What was the R&D expenditure in fiscal year 2024?",
+  "reference_answer": "R&D expenditure for FY2024 was $8.2 million, representing 22% of total revenue.",
+  "source_docs": ["fy2024_annual_report.pdf"],
+  "key_facts": ["$8.2 million", "22% of revenue"],
+  "notes": "Specific financial figure"})
+
+dataset.append({"id": "artha-eval-007", "category": "direct_lookup", "difficulty": "easy",
+  "question": "When was the company founded and by whom?",
+  "reference_answer": "The company was founded in 2019 by Alex Rodriguez and Maria Santos in Palo Alto, California.",
+  "source_docs": ["company_overview_2024.pdf"],
+  "key_facts": ["2019", "Alex Rodriguez", "Maria Santos", "Palo Alto"],
+  "notes": "Founding details"})
+
+dataset.append({"id": "artha-eval-008", "category": "direct_lookup", "difficulty": "easy",
+  "question": "What is the company primary banking partner?",
+  "reference_answer": "The company primary banking partner is Silicon Valley Bank (SVB), with secondary relationships with Chase and Wells Fargo.",
+  "source_docs": ["fy2024_annual_report.pdf"],
+  "key_facts": ["Silicon Valley Bank", "SVB", "Chase", "Wells Fargo"],
+  "notes": "Banking relationship lookup"})
+
+dataset.append({"id": "artha-eval-009", "category": "direct_lookup", "difficulty": "easy",
+  "question": "What is the current number of active customers?",
+  "reference_answer": "The company serves 1,847 active enterprise customers, including 47 of the Fortune 500.",
+  "source_docs": ["company_overview_2024.pdf"],
+  "key_facts": ["1,847", "47 Fortune 500"],
+  "notes": "Customer count"})
+
+dataset.append({"id": "artha-eval-010", "category": "direct_lookup", "difficulty": "medium",
+  "question": "What are the company three primary revenue streams and their respective contributions?",
+  "reference_answer": "The three primary revenue streams are: Subscription Services ($45.2M, 52%), Enterprise Licensing ($28.6M, 33%), and Professional Services ($13.1M, 15%).",
+  "source_docs": ["fy2024_annual_report.pdf"],
+  "key_facts": ["Subscription Services $45.2M 52%", "Enterprise Licensing $28.6M 33%", "Professional Services $13.1M 15%"],
+  "notes": "Multi-chunk within single document"})
+
+# ── synthesis (7) ──
+dataset.append({"id": "artha-eval-011", "category": "synthesis", "difficulty": "medium",
+  "question": "Summarize the company financial performance trends over the past three fiscal years.",
+  "reference_answer": "Over the past three fiscal years (2022-2024), the company has demonstrated consistent growth: revenue increased from $52.3M (FY2022) to $71.8M (FY2023) to $86.9M (FY2024), representing CAGR of 28.9%. Net profit margin improved from 11.2% to 14.2% to 18.7%.",
+  "source_docs": ["fy2022_annual_report.pdf", "fy2023_annual_report.pdf", "fy2024_annual_report.pdf"],
+  "key_facts": ["revenue $52.3M to $86.9M", "CAGR 28.9%", "margin 11.2% to 18.7%"],
+  "notes": "Cross-year synthesis required"})
+
+dataset.append({"id": "artha-eval-012", "category": "synthesis", "difficulty": "medium",
+  "question": "What are the key risk factors mentioned across all recent financial filings?",
+  "reference_answer": "Key risk factors include: market competition, dependence on key personnel, cybersecurity threats, regulatory changes in data privacy, foreign exchange exposure (34% of revenue), and supply chain concentration risk.",
+  "source_docs": ["fy2024_annual_report.pdf", "q3_2024_financial_report.pdf", "risk_register_2024.pdf"],
+  "key_facts": ["market competition", "key personnel", "cybersecurity", "regulatory changes", "FX exposure 34%"],
+  "notes": "Cross-document risk synthesis"})
+
+dataset.append({"id": "artha-eval-013", "category": "synthesis", "difficulty": "hard",
+  "question": "Describe the company AI and machine learning strategy and its impact on product development.",
+  "reference_answer": "The AI/ML strategy focuses on three pillars: (1) Embedding AI into products - the ARTH Copilot launched in Q2 2024 with 34% adoption, (2) Internal ML infrastructure for document intelligence achieving 99.2% OCR accuracy, (3) A 45-person AI research team focused on RAG. R&D on AI increased 67% YoY to $5.4M.",
+  "source_docs": ["fy2024_annual_report.pdf", "technology_roadmap_2025.pdf", "ai_research_report_q3_2024.pdf"],
+  "key_facts": ["ARTH Copilot 34%", "OCR 99.2%", "45-person AI team", "AI R&D $5.4M 67%"],
+  "notes": "Multi-document synthesis"})
+
+dataset.append({"id": "artha-eval-014", "category": "synthesis", "difficulty": "medium",
+  "question": "What is the company approach to environmental sustainability?",
+  "reference_answer": "The company achieved carbon neutrality for Scope 1 and 2 emissions in 2023, targets 50% reduction in Scope 3 by 2030, powers all data centers with renewable energy since 2024, and has an internal carbon price of $50/ton. MSCI ESG rating: AA.",
+  "source_docs": ["esg_report_2024.pdf"],
+  "key_facts": ["carbon neutrality 2023", "50% Scope 3 reduction 2030", "renewable energy 2024", "$50/ton carbon price", "MSCI AA"],
+  "notes": "Single-doc synthesis"})
+
+dataset.append({"id": "artha-eval-015", "category": "synthesis", "difficulty": "medium",
+  "question": "Analyze the company geographical revenue distribution and growth strategy.",
+  "reference_answer": "FY2024 revenue: North America 58% ($50.4M), Europe 24% ($20.9M), Asia-Pacific 14% ($12.2M), RoW 4% ($3.5M). APAC is fastest-growing at 41% YoY. Strategy: expand European sales team 60% in 2025, launch Japan-specific product.",
+  "source_docs": ["fy2024_annual_report.pdf", "growth_strategy_2025.pdf"],
+  "key_facts": ["NA 58% $50.4M", "Europe 24% $20.9M", "APAC 14% $12.2M 41%", "60% European expansion"],
+  "notes": "Geographic analysis"})
+
+dataset.append({"id": "artha-eval-016", "category": "synthesis", "difficulty": "hard",
+  "question": "What are the key findings from the latest customer satisfaction survey?",
+  "reference_answer": "The H1 2024 survey (N=342) shows: NPS of 62 (up from 54). Strengths: document accuracy 4.6/5, response quality 4.4/5. Weaknesses: mobile app 3.2/5, onboarding 3.5/5. Top requests: real-time collaboration (47%), expanded API (38%), templates (31%).",
+  "source_docs": ["customer_survey_h1_2024.pdf"],
+  "key_facts": ["NPS 62", "document 4.6/5", "mobile 3.2/5", "collaboration 47%"],
+  "notes": "Survey synthesis"})
+
+dataset.append({"id": "artha-eval-017", "category": "synthesis", "difficulty": "medium",
+  "question": "Describe the competitive landscape and market positioning.",
+  "reference_answer": "The IDP market is $4.2B (2024) projected to $8.7B by 2028 (CAGR 15.6%). Differentiators: local-first architecture, 99.2% accuracy vs 94.5% industry average, open-source transparency. Market share: 3.2% in financial services.",
+  "source_docs": ["market_analysis_2024.pdf", "competitive_intelligence_q3_2024.pdf"],
+  "key_facts": ["$4.2B market", "CAGR 15.6%", "99.2% accuracy", "3.2% share"],
+  "notes": "Competitive analysis"})
+
+# ── comparison (3) ──
+dataset.append({"id": "artha-eval-018", "category": "comparison", "difficulty": "medium",
+  "question": "Compare the company Q2 and Q3 2024 revenue performance.",
+  "reference_answer": "Q2 revenue was $19.8M, Q3 was $24.1M (21.7% growth). Driven by three enterprise deals ($2.8M), ARTH Copilot upsell ($1.5M), and European seasonal strength. Subscription +18% QoQ, licensing +31% QoQ.",
+  "source_docs": ["q2_2024_financial_report.pdf", "q3_2024_financial_report.pdf"],
+  "key_facts": ["Q2 $19.8M", "Q3 $24.1M", "21.7% growth", "$2.8M enterprise deals"],
+  "notes": "QoQ comparison"})
+
+dataset.append({"id": "artha-eval-019", "category": "comparison", "difficulty": "medium",
+  "question": "Compare the total compensation for the CEO and CFO.",
+  "reference_answer": "CEO Sarah Chen: $3.2M total (base $650K, stock $1.8M, bonus $550K). CFO James Park: $1.5M total (base $425K, stock $750M, bonus $275K). CEO-to-median pay ratio: 45:1.",
+  "source_docs": ["proxy_statement_2024.pdf"],
+  "key_facts": ["CEO $3.2M", "CFO $1.5M", "pay ratio 45:1"],
+  "notes": "Executive comp comparison"})
+
+dataset.append({"id": "artha-eval-020", "category": "comparison", "difficulty": "hard",
+  "question": "Compare the company 2024 financial guidance against actual results.",
+  "reference_answer": "Guidance: Revenue $82-88M, EPS $1.42-1.58, Op Margin 16-19%. Actual: Revenue $86.9M (within), EPS $1.51 (within), Op Margin 18.7% (high end). Revenue above midpoint due to enterprise license strength.",
+  "source_docs": ["fy2024_guidance.pdf", "fy2024_annual_report.pdf"],
+  "key_facts": ["guidance $82-88M", "actual $86.9M", "EPS $1.51", "margin 18.7%"],
+  "notes": "Guidance vs actual"})
+
+# ── multi_document (2) ──
+dataset.append({"id": "artha-eval-021", "category": "multi_document", "difficulty": "hard",
+  "question": "What security incidents were reported across the infrastructure audit and compliance report?",
+  "reference_answer": "Infra audit: (1) misconfigured S3 bucket exposing metadata for 4 hours on Aug 12, (2) SQL injection attempt blocked by WAF. Compliance report: (3) phishing simulation with 12% fall rate, (4) third-party vendor credential incident in staging.",
+  "source_docs": ["infrastructure_audit_q3_2024.pdf", "compliance_report_fy2024.pdf"],
+  "key_facts": ["S3 misconfiguration Aug 12", "SQL injection blocked", "phishing 12%", "vendor credential incident"],
+  "notes": "Cross-doc incident correlation"})
+
+dataset.append({"id": "artha-eval-022", "category": "multi_document", "difficulty": "hard",
+  "question": "What are the total liabilities and debt obligations?",
+  "reference_answer": "Total liabilities $42.3M: AP $5.1M, Accrued $3.8M, Deferred Revenue $12.6M, Short-term Debt $8.0M, Long-term Debt $12.8M (4.75% due 2027). Debt-to-equity: 0.62. Undrawn facility: $15M.",
+  "source_docs": ["fy2024_annual_report.pdf", "fy2024_financial_statements.pdf"],
+  "key_facts": ["total liabilities $42.3M", "long-term debt $12.8M", "debt-to-equity 0.62", "$15M undrawn"],
+  "notes": "Financial cross-reference"})
+
+# ── unanswerable (5) ──
+dataset.append({"id": "artha-eval-023", "category": "unanswerable", "difficulty": "easy",
+  "question": "What is the CEO personal email address?",
+  "reference_answer": "I do not have information about the CEO personal email address. The available documents do not contain personal contact information for executives.",
+  "source_docs": [], "key_facts": ["no answer in documents"], "notes": "Unanswerable"})
+
+dataset.append({"id": "artha-eval-024", "category": "unanswerable", "difficulty": "easy",
+  "question": "What is the company stock price today?",
+  "reference_answer": "I cannot provide the current stock price. The documents in my knowledge base are historical reports and do not contain real-time market data.",
+  "source_docs": [], "key_facts": ["no answer in documents"], "notes": "Unanswerable - time-sensitive"})
+
+dataset.append({"id": "artha-eval-025", "category": "unanswerable", "difficulty": "easy",
+  "question": "What products is the company planning to launch in 2026?",
+  "reference_answer": "The available documents only cover plans through 2025. No information about 2026 launches is present in the knowledge base.",
+  "source_docs": [], "key_facts": ["no answer in documents"], "notes": "Unanswerable - out of scope"})
+
+dataset.append({"id": "artha-eval-026", "category": "unanswerable", "difficulty": "easy",
+  "question": "How does the company diversity ratio compare to industry benchmarks?",
+  "reference_answer": "The available documents do not include comparative diversity benchmarking data.",
+  "source_docs": [], "key_facts": ["no answer in documents"], "notes": "Unanswerable - missing data"})
+
+dataset.append({"id": "artha-eval-027", "category": "unanswerable", "difficulty": "easy",
+  "question": "What specific terms were negotiated in the latest union contract?",
+  "reference_answer": "The available documents do not contain information about union contracts or labor negotiations.",
+  "source_docs": [], "key_facts": ["no answer in documents"], "notes": "Unanswerable - no such doc"})
+
+# ── code_technical (3) ──
+dataset.append({"id": "artha-eval-028", "category": "code_technical", "difficulty": "medium",
+  "question": "What is the API endpoint to upload a document?",
+  "reference_answer": "POST /api/projects/{project_id}/documents. Accepts multipart/form-data with file in the file field. Max 10MB. Returns 202 with DocumentRead.",
+  "source_docs": ["api_documentation_v2.pdf"],
+  "key_facts": ["POST /api/projects/{project_id}/documents", "multipart/form-data", "10MB max", "202 status"],
+  "notes": "API endpoint"})
+
+dataset.append({"id": "artha-eval-029", "category": "code_technical", "difficulty": "medium",
+  "question": "What authentication mechanism is used for the API?",
+  "reference_answer": "JWT bearer tokens. Access tokens: 30 min TTL. Refresh tokens: 7 days. Obtained via POST /api/auth/login. Revocation via Redis-backed JTI blacklist.",
+  "source_docs": ["api_documentation_v2.pdf", "security_architecture.pdf"],
+  "key_facts": ["JWT bearer", "30 min access", "7 day refresh", "Redis JTI blacklist"],
+  "notes": "Auth mechanism"})
+
+dataset.append({"id": "artha-eval-030", "category": "code_technical", "difficulty": "medium",
+  "question": "What are the rate limits for the chat endpoint?",
+  "reference_answer": "Chat: 20 req/min. Other: register 5/min, login 10/min, change-password 5/min, forgot-password 3/min. Token bucket algorithm keyed by IP + user ID.",
+  "source_docs": ["api_documentation_v2.pdf"],
+  "key_facts": ["chat 20/min", "register 5/min", "login 10/min", "token bucket"],
+  "notes": "Rate limits"})
+
+# ── paraphrase (5) ──
+dataset.append({"id": "artha-eval-031", "category": "paraphrase", "difficulty": "medium",
+  "question": "How much money did the company make in Q3 2024?",
+  "reference_answer": "The total revenue for Q3 2024 was $12.4 million, driven by a 22% increase in subscription services and 15% growth in enterprise licensing.",
+  "source_docs": ["q3_2024_financial_report.pdf"],
+  "key_facts": ["$12.4 million", "Q3 2024"],
+  "notes": "Paraphrase of eval-001"})
+
+dataset.append({"id": "artha-eval-032", "category": "paraphrase", "difficulty": "medium",
+  "question": "Who is running the company right now?",
+  "reference_answer": "The current CEO is Sarah Chen, who assumed the role in January 2023.",
+  "source_docs": ["company_overview_2024.pdf"],
+  "key_facts": ["Sarah Chen", "CEO"],
+  "notes": "Paraphrase of eval-002"})
+
+dataset.append({"id": "artha-eval-033", "category": "paraphrase", "difficulty": "medium",
+  "question": "What were the earnings per share for FY2024?",
+  "reference_answer": "The GAAP EPS for FY2024 was $1.51, within the guided range of $1.42-$1.58.",
+  "source_docs": ["fy2024_annual_report.pdf"],
+  "key_facts": ["$1.51", "FY2024"],
+  "notes": "Paraphrase financial metric"})
+
+dataset.append({"id": "artha-eval-034", "category": "paraphrase", "difficulty": "medium",
+  "question": "Can you tell me how many people work here?",
+  "reference_answer": "As of December 2024, the company employs 3,247 people across 12 offices worldwide.",
+  "source_docs": ["company_overview_2024.pdf"],
+  "key_facts": ["3,247 employees"],
+  "notes": "Informal phrasing"})
+
+dataset.append({"id": "artha-eval-035", "category": "paraphrase", "difficulty": "hard",
+  "question": "Give me the highlights from the Q3 numbers.",
+  "reference_answer": "Q3 2024 revenue was $24.1M, up 21.7% sequentially. Driven by three enterprise deals ($2.8M), ARTH Copilot ($1.5M), and European strength. Subscription +18%, licensing +31% QoQ.",
+  "source_docs": ["q3_2024_financial_report.pdf"],
+  "key_facts": ["$24.1M", "21.7% growth", "$2.8M deals"],
+  "notes": "Colloquial Q3 request"})
+
+# ── edge_case (5+1 to reach 50) ──
+dataset.append({"id": "artha-eval-036", "category": "edge_case", "difficulty": "hard",
+  "question": "", "source_docs": [], "key_facts": [],
+  "reference_answer": "I received an empty query. Please provide a question about the documents in the knowledge base.",
+  "notes": "Empty query"})
+
+dataset.append({"id": "artha-eval-037", "category": "edge_case", "difficulty": "hard",
+  "question": "What is Q3 revenue and what is the CEOs favorite color and what is the weather?",
+  "reference_answer": "Q3 2024 revenue was $24.1M. I cannot answer the other parts - the documents do not contain personal preferences or weather data.",
+  "source_docs": ["q3_2024_financial_report.pdf"], "key_facts": ["$24.1M"],
+  "notes": "Multi-part mixed query"})
+
+dataset.append({"id": "artha-eval-038", "category": "edge_case", "difficulty": "hard",
+  "question": "Cual fue el ingreso total para el tercer trimestre de 2024?",
+  "reference_answer": "El ingreso total para el tercer trimestre de 2024 fue de $12.4 millones.",
+  "source_docs": ["q3_2024_financial_report.pdf"],
+  "key_facts": ["$12.4 million"],
+  "notes": "Non-English query"})
+
+dataset.append({"id": "artha-eval-039", "category": "edge_case", "difficulty": "hard",
+  "question": "waht was teh reveune 4 Q3 2024?",
+  "reference_answer": "The total revenue for Q3 2024 was $12.4 million.",
+  "source_docs": ["q3_2024_financial_report.pdf"],
+  "key_facts": ["$12.4 million"],
+  "notes": "Typo-heavy query"})
+
+dataset.append({"id": "artha-eval-040", "category": "edge_case", "difficulty": "hard",
+  "question": "Revenue",
+  "reference_answer": "Based on the available documents, FY2024 total revenue was $86.9 million. For more specific revenue figures, please specify which quarter or segment you are interested in.",
+  "source_docs": ["fy2024_annual_report.pdf", "q3_2024_financial_report.pdf"],
+  "key_facts": ["$86.9M"],
+  "notes": "Single-word query"})
+
+# final 10 to reach 50
+dataset.append({"id": "artha-eval-041", "category": "direct_lookup", "difficulty": "easy",
+  "question": "What is the company registered address?",
+  "reference_answer": "The company registered address is 415 Mission Street, Suite 300, San Francisco, CA 94105.",
+  "source_docs": ["company_overview_2024.pdf"],
+  "key_facts": ["415 Mission Street", "San Francisco", "94105"],
+  "notes": "Address lookup"})
+
+dataset.append({"id": "artha-eval-042", "category": "direct_lookup", "difficulty": "easy",
+  "question": "Who serves on the board of directors?",
+  "reference_answer": "The board consists of 7 members: Sarah Chen (Chair), Dr. James Park, Lisa Wong, Mark Thompson, Dr. Aisha Patel, Robert Kim, and Elena Garcia.",
+  "source_docs": ["proxy_statement_2024.pdf"],
+  "key_facts": ["7 members", "Sarah Chen Chair", "James Park", "Lisa Wong"],
+  "notes": "Board composition"})
+
+dataset.append({"id": "artha-eval-043", "category": "direct_lookup", "difficulty": "easy",
+  "question": "What is the employee turnover rate?",
+  "reference_answer": "The voluntary employee turnover rate for FY2024 was 12.3%, down from 15.8% in FY2023.",
+  "source_docs": ["esg_report_2024.pdf"],
+  "key_facts": ["12.3% FY2024", "15.8% FY2023"],
+  "notes": "HR metric"})
+
+dataset.append({"id": "artha-eval-044", "category": "direct_lookup", "difficulty": "easy",
+  "question": "What is the average customer contract value?",
+  "reference_answer": "The average annual contract value (ACV) is $47,000 for enterprise customers and $12,000 for mid-market customers.",
+  "source_docs": ["fy2024_annual_report.pdf"],
+  "key_facts": ["$47,000 enterprise ACV", "$12,000 mid-market ACV"],
+  "notes": "Contract value"})
+
+dataset.append({"id": "artha-eval-045", "category": "synthesis", "difficulty": "medium",
+  "question": "What are the main factors driving customer churn?",
+  "reference_answer": "Main churn factors: (1) Price sensitivity in mid-market (28% of churned customers cited cost), (2) Insufficient integration capabilities (22%), (3) Moving to in-house solutions (18%), (4) Competitor product features (15%), (5) Other (17%). Gross churn rate was 9.8% in FY2024.",
+  "source_docs": ["customer_survey_h1_2024.pdf", "fy2024_annual_report.pdf"],
+  "key_facts": ["price sensitivity 28%", "integration 22%", "in-house 18%", "gross churn 9.8%"],
+  "notes": "Churn analysis"})
+
+dataset.append({"id": "artha-eval-046", "category": "synthesis", "difficulty": "medium",
+  "question": "What patents does the company hold?",
+  "reference_answer": "The company holds 23 granted patents and 12 pending applications. Key patent areas: document understanding/NLP (8 patents), vector search optimization (6), OCR/IDP (5), and user interface (4).",
+  "source_docs": ["fy2024_annual_report.pdf", "technology_roadmap_2025.pdf"],
+  "key_facts": ["23 granted", "12 pending", "document NLP 8", "vector search 6"],
+  "notes": "IP portfolio"})
+
+dataset.append({"id": "artha-eval-047", "category": "comparison", "difficulty": "medium",
+  "question": "Compare the qualifications of the CEO and CTO.",
+  "reference_answer": "CEO Sarah Chen: MBA from Stanford, 18 years experience in enterprise SaaS, previously COO for 4 years. CTO Dr. James Park: PhD in Computer Science from MIT, 12 years in AI/ML, previously led AI research at Google.",
+  "source_docs": ["proxy_statement_2024.pdf", "company_overview_2024.pdf"],
+  "key_facts": ["CEO: Stanford MBA, 18 years SaaS", "CTO: MIT PhD, 12 years AI/ML, Google"],
+  "notes": "Executive qualifications"})
+
+dataset.append({"id": "artha-eval-048", "category": "multi_document", "difficulty": "hard",
+  "question": "What regulatory filings has the company submitted this year?",
+  "reference_answer": "Regulatory filings: (1) 10-K annual report (FY2024), (2) 10-Q quarterly reports (Q1, Q2, Q3 2024), (3) 8-K filings for material events (CEO compensation change, acquisition of AI startup), (4) Proxy statement for 2024 shareholder meeting, (5) Section 16 filings for insider transactions.",
+  "source_docs": ["fy2024_annual_report.pdf", "q3_2024_financial_report.pdf", "proxy_statement_2024.pdf"],
+  "key_facts": ["10-K", "10-Q (3)", "8-K (2)", "Proxy", "Section 16"],
+  "notes": "Regulatory filing summary"})
+
+dataset.append({"id": "artha-eval-049", "category": "paraphrase", "difficulty": "medium",
+  "question": "Whats the net profit situation looking like?",
+  "reference_answer": "The net profit margin for FY2024 was 18.7%, up from 14.2% in FY2023.",
+  "source_docs": ["fy2024_annual_report.pdf"],
+  "key_facts": ["18.7% FY2024", "14.2% FY2023"],
+  "notes": "Casual phrasing for profit margin"})
+
+dataset.append({"id": "artha-eval-050", "category": "edge_case", "difficulty": "hard",
+  "question": "How does the RAG pipeline handle query rewriting and what documents would answer this question about the retrieval mechanism itself?",
+  "reference_answer": "The RAG pipeline first analyzes the query, then retrieves relevant chunks using hybrid search (vector cosine + trigram + BM25 fused via RRF). Results are reranked by a cross-encoder. If confidence is low, HyDE fallback generates hypothetical documents to improve retrieval.",
+  "source_docs": ["system_architecture_2024.pdf", "api_documentation_v2.pdf"],
+  "key_facts": ["analyze query", "RRF hybrid search", "cross-encoder rerank", "HyDE fallback"],
+  "notes": "Meta question about the system itself"})
+
+with open("backend/eval/arthur_eval_dataset.json", "w") as f:
+    json.dump(dataset, f, indent=2)
+
+print(f"Dataset written: {len(dataset)} entries")

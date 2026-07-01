@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { FormEvent, useState } from "react"
 import { KeyRoundIcon, XIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -12,12 +12,12 @@ interface ChangePasswordDialogProps {
 }
 
 export function ChangePasswordDialog({ changePassword }: ChangePasswordDialogProps) {
-  const [isOpen, setIsOpen] = React.useState(false)
-  const [currentPassword, setCurrentPassword] = React.useState("")
-  const [newPassword, setNewPassword] = React.useState("")
-  const [confirmPassword, setConfirmPassword] = React.useState("")
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const reset = () => {
     setCurrentPassword("")
@@ -31,7 +31,7 @@ export function ChangePasswordDialog({ changePassword }: ChangePasswordDialogPro
     setIsOpen(false)
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
 

@@ -1,4 +1,5 @@
 import os
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -9,7 +10,12 @@ os.environ.setdefault(
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("JWT_SECRET", "test-secret-key-with-at-least-32-chars")
 
-from src.core.config import get_settings
+from app.config import get_settings
+
+
+@pytest.fixture
+def fake_uuid() -> UUID:
+    return uuid4()
 
 
 @pytest.fixture(autouse=True)

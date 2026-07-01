@@ -1,26 +1,34 @@
 "use client"
 
-import * as React from "react"
-import { ArrowUpIcon, GlobeIcon, LibraryIcon, Loader2Icon, SparklesIcon } from "lucide-react"
+import { ArrowUpIcon, GlobeIcon, LibraryIcon } from "lucide-react"
+import { FormEvent, forwardRef } from "react"
 
-import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 interface ChatInputProps {
   question: string
   onQuestionChange: (value: string) => void
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void
   onLibraryClick: () => void
   isStreaming: boolean
   isLoadingMessages: boolean
   hasActiveProject: boolean
   webSearchEnabled: boolean
   onWebSearchToggle: () => void
+  selectedModel: string
+  onModelChange: (model: string) => void
 }
 
-export const ChatInput = React.forwardRef<HTMLFormElement, ChatInputProps>(
+const COMMON_MODELS = [
+  "qwen2.5:7b",
+  "gemma4:e4b",
+]
+
+export const ChatInput = forwardRef<HTMLFormElement, ChatInputProps>(
   function ChatInput({
     question,
     onQuestionChange,
@@ -31,6 +39,8 @@ export const ChatInput = React.forwardRef<HTMLFormElement, ChatInputProps>(
     hasActiveProject,
     webSearchEnabled,
     onWebSearchToggle,
+    selectedModel,
+    onModelChange,
   }: ChatInputProps, ref) {
     const disabled = !hasActiveProject || isStreaming || isLoadingMessages
 
@@ -95,6 +105,33 @@ export const ChatInput = React.forwardRef<HTMLFormElement, ChatInputProps>(
                   </TooltipTrigger>
                   <TooltipContent>Toggle Google search</TooltipContent>
                 </Tooltip>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="text-[11px] h-8 text-muted-foreground hover:text-foreground hover:bg-background/50 font-medium px-2 rounded-lg flex items-center gap-1.5 shrink-0"
+                    >
+                      {selectedModel}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    {COMMON_MODELS.map((model) => (
+                      <DropdownMenuItem
+                        key={model}
+                        onClick={() => onModelChange(model)}
+                        className={cn(
+                          "text-xs cursor-pointer",
+                          selectedModel === model && "bg-muted font-medium"
+                        )}
+                      >
+                        {model}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               <Button

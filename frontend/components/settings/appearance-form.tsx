@@ -1,7 +1,7 @@
 "use client"
 
-import * as React from "react"
-import { CheckIcon, MonitorIcon, MoonIcon, SaveIcon, SunIcon } from "lucide-react"
+import { useState } from "react"
+import { MonitorIcon, MoonIcon, SaveIcon, SunIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Select } from "@/components/ui/select"
@@ -15,8 +15,8 @@ interface AppearanceFormProps {
 }
 
 export function AppearanceForm({ defaultSidebarState, defaultTheme, isSavingSettings, onSave }: AppearanceFormProps) {
-  const [themePreference, setThemePreference] = React.useState(defaultTheme)
-  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(defaultSidebarState)
+  const [themePreference, setThemePreference] = useState(defaultTheme)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(defaultSidebarState)
 
   return (
     <form
@@ -34,7 +34,8 @@ export function AppearanceForm({ defaultSidebarState, defaultTheme, isSavingSett
             { id: "dark", icon: MoonIcon, label: "Dark" },
             { id: "system", icon: MonitorIcon, label: "System" },
           ].map((theme) => (
-            <button
+            <Button
+              variant="ghost"
               key={theme.id}
               type="button"
               onClick={() => setThemePreference(theme.id as any)}
@@ -45,14 +46,9 @@ export function AppearanceForm({ defaultSidebarState, defaultTheme, isSavingSett
                   : "border-border/50 hover:border-border hover:bg-muted"
               )}
             >
-              <theme.icon className={cn("size-6", themePreference === theme.id ? "text-primary" : "text-muted-foreground group-hover/theme:text-foreground")} />
-              <span className="text-xs font-medium">{theme.label}</span>
-              {themePreference === theme.id && (
-                <div className="absolute top-1.5 right-1.5 size-4 bg-primary rounded-full flex items-center justify-center">
-                  <CheckIcon className="size-2.5 text-primary-foreground" />
-                </div>
-              )}
-            </button>
+
+              <span className="text-xs font-medium flex items-center justify-center"><theme.icon className={cn("size-6", themePreference === theme.id ? "text-primary" : "text-muted-foreground group-hover/theme:text-foreground")} />&nbsp;&nbsp;{theme.label}</span>
+            </Button>
           ))}
         </div>
       </div>

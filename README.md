@@ -1,57 +1,77 @@
 # Artha
-**A Local-First, Autonomous RAG Stack**
+**Local-Only RAG Engine for Regulated Enterprises**
 
-## a. Quick setup instructions
+Artha is the most sophisticated local-only retrieval-augmented generation (RAG) engine designed for regulated enterprises. It runs entirely on your infrastructure — no external API dependencies, no data leaving your network. Deploy in air-gapped environments, achieve SOC 2 patterns, and maintain full data sovereignty.
 
-To get this project running locally on your machine, you'll need Docker, Python 3.12 (`uv`), Bun, and Ollama installed.
+- **Zero data egress**: All inference, embedding, and retrieval runs locally via Ollama.
+- **Single-command deploy**: `docker compose up -d` starts the full stack.
+- **Proven retrieval quality**: Benchmark with 50 labeled QA pairs, context recall and faithfulness metrics.
+- **Enterprise security**: SSRF guard, Fernet encryption, JWT validation, rate limiting, network isolation.
+- **Audit-ready observability**: Langfuse integration for full traceability.
 
-1. **Environment files**:
-   ```bash
-   cp .env.example .env
-   cp .env backend/.env
-   cp .env frontend/.env
-   ```
-   Both apps read from their own local `.env`. The `./run.sh` script handles this automatically if you'd rather not do it manually.
-
-2. **Pull models**:
-   ```bash
-   # ollama pull qwen2.5:3b consumes around 1.8GB to 3.8GB VRAM
-   ollama pull gemma4:e4b   # <-- consumes around 2GB to 4GB VRAM
-   ollama pull nomic-embed-text
-   ```
-
-3. **Spin up infrastructure** (Postgres, Redis, etc.):
-   ```bash
-   docker compose -f compose.yaml -f compose.dev.yaml up -d
-   ```
-
-4. **Backend**:
-   ```bash
-   cd backend
-   uv sync
-   uv run alembic upgrade head
-   uv run uvicorn src.main:app --reload
-   ```
-
-5. **Frontend**:
-   ```bash
-   cd frontend
-   bun install
-   bun run dev
-   ```
-
-Or just run `./run.sh` from the root and it'll walk you through everything interactively.
+Documentation: [PRODUCT.md](./PRODUCT.md) | [COMPLIANCE.md](./COMPLIANCE.md) | [Eval Framework](./backend/eval/README.md)
 
 ---
 
-## b. Architecture overview
+## Quick Start (Docker)
+
+**Prerequisites**: Docker and docker compose (no native runtimes required).
+
+```bash
+# 1. Clone and configure
+git clone <repo> && cd artha
+cp .env.example .env
+
+# 2. Start everything
+docker compose up -d
+#   App (nginx gateway): http://localhost:8080
+#   Backend API:         http://localhost:8000
+#   Langfuse:            http://localhost:3001
+
+# 3. Pull models into the Ollama container
+docker compose exec ollama ollama pull qwen2.5:7b
+docker compose exec ollama ollama pull bge-m3
+
+# 4. Run database migrations
+docker compose exec api alembic upgrade head
+```
+
+Or use the interactive script: `./run.sh` and select option 1.
+
+### Alternative: Native Development
+
+For active development, run services natively. Requires Python 3.12, `uv`, Bun, and Ollama.
+
+```bash
+# Infrastructure in Docker
+docker compose -f compose.yaml -f compose.dev.yaml up -d
+
+# Backend
+cd backend && uv sync && uv run alembic upgrade head
+uv run uvicorn src.main:app --reload &
+
+# Worker (separate terminal)
+cd backend && uv run arq app.services.arq_worker.WorkerSettings &
+
+# Frontend
+cd frontend && bun install && bun run dev
+
+# Or: make dev
+```
+
+---
+
+## Architecture overview
 
 The system is intentionally decoupled and local-first — no external API dependencies, no data leaving the machine.
 
 - **Frontend**: Next.js, talking to the backend over REST and SSE for streaming responses.
 - **Backend**: FastAPI, structured with Clean Architecture — routers, services, and repositories are separate so you can test the business logic without touching the HTTP layer.
 - **Data layer**:
-  - **PostgreSQL + pgvector + pg_trgm** — relational metadata, vector embeddings, and trigram indexing all in one place. Keeping vectors and relational data in the same store avoids sync bugs that bite you with a separate vector DB.
+  - **PostgreSQL** — relational metadata and application state.
+  - **Qdrant** — high-performance vector database for fast and scalable similarity search.
+  - **MinIO** — S3-compatible object storage for robust document blob management.
+  - **Neo4j** — Knowledge graph for personal entity tracking and user memory.
   - **Redis** — message broker for background jobs, embedding cache.
 - **Background workers**: ARQ. When a document gets uploaded, parsing + chunking + embedding gets handed off to workers immediately so the API doesn't block on a 50-page PDF.
 - **Agent orchestration**: LangGraph as a state machine. Rather than a dumb retrieve-then-answer chain, queries get routed, results go through a quality gate, and if confidence is low it loops back with a HyDE expansion before answering. More moving parts, but also more resilient.
@@ -71,7 +91,10 @@ graph TB
     end
 
     subgraph Data
-        PG["PostgreSQL + pgvector"]
+        PG["PostgreSQL"]
+        Qdrant["Qdrant"]
+        MinIO["MinIO"]
+        Neo4j["Neo4j"]
         Redis["Redis"]
     end
 
@@ -88,10 +111,13 @@ graph TB
     API -- "Enqueue Jobs" --> Redis
     Redis -- "Dequeue Jobs" --> Worker
     Worker -- "Invoke" --> LGI
-    LGI -- "Parse + Chunk + Embed" --> PG
-    LGI -- "Generate Enrichments" --> Ollama
-    API -- "Hybrid Search (RRF)" --> PG
-    API -- "Embed Queries + Stream LLM" --> Ollama
+    LGI -- "Parse + Chunk" --> MinIO
+    LGI -- "Embed" --> Qdrant
+    LGI -- "Extract Entities" --> Neo4j
+    LGI -- "Generate Enrichments" --> LiteLLM
+    API -- "Vector Search" --> Qdrant
+    API -- "Knowledge Graph Context" --> Neo4j
+    API -- "Embed Queries + Stream LLM" --> LiteLLM
     API -- "Rerank Results" --> Reranker
     API -- "Traces + Spans" --> LF
 ```
@@ -117,17 +143,20 @@ graph LR
 Moving this to AWS would look roughly like:
 
 1. **Compute**: Containerize the FastAPI app and ARQ workers, deploy on ECS Fargate with auto-scaling. Frontend goes on Vercel or Amplify.
-2. **Data layer**: Local Postgres → managed RDS with `pgvector` enabled, read replicas for search-heavy workloads. Redis → ElastiCache. Neo4j/AuraDB stays only if the graph layer actually earns its keep — the base `pgvector` pipeline is probably sufficient for most corpora.
-3. **Inference**: Ollama is great for local dev but too slow under real load. In production I'd swap to Groq or Together AI for generation and OpenAI/Cohere for embeddings.
-4. **File handling**: Right now files hit the disk during ingestion. Pre-signed S3 uploads would let large PDFs go straight to workers without touching the API server.
+2. **Data layer**: Local Postgres → managed RDS. Qdrant → Qdrant Cloud or managed Pinecone. Redis → ElastiCache. MinIO → AWS S3. Neo4j → AuraDB.
+3. **Inference**: Handled transparently by LiteLLM — easily swap local Ollama for Groq, Together AI, or OpenAI in production via environment variables.
+4. **File handling**: Pre-signed S3 uploads would let large PDFs go straight to workers without touching the API server.
 
 ---
 
 ## d. RAG/LLM approach & decisions: Choices considered and final choice for LLM / embedding model / vector database / orchestration framework, prompt & context management, guardrails, quality, observability
 
-- **LLM — Gemma4:e4b via Ollama**: Keeps everything local and the memory footprint low. The tradeoff is synthesis quality — a bigger model will generally do better, but for local evaluation this hits the right balance.
-- **Embeddings — nomic-embed-text**: Local, easy to operate, no API dependency. Best embedding model really depends on your corpus, so treat this as a sensible starting point rather than a final answer.
-- **Vector DB — pgvector**: One less service to run. Vectors and relational metadata in the same transaction means no sync bugs between two stores.
+- **LLM — Universal Support via LiteLLM**: Swap between local Ollama models (e.g. Qwen2.5:7b) and cloud providers (OpenAI, Anthropic) simply by changing environment variables.
+- **Embeddings — bge-m3 (BAAI)**: 1024-dimensional multilingual embeddings, fully local.
+- **Vector DB — Qdrant**: Scalable, high-performance vector search engine.
+- **Object Storage — MinIO**: S3-compatible, robust artifact storage.
+- **Knowledge Graph — Neo4j**: Powers individual chat memory and entity tracking across conversations.
+- **Document Parsing — PyMuPDF + Surya OCR**: Fast native text extraction with advanced OCR fallback for scanned or corrupted documents.
 - **Chunking — hierarchical parent-child**: Small 80-word child chunks for precise retrieval, 320-word parent chunks for context injection. Better recall, but it adds preprocessing complexity and latency.
 - **Enriched embeddings**: During ingestion the LLM generates 3 hypothetical questions and a summary per chunk before embedding. Helps recall on paraphrased queries, but it slows down ingestion and adds a dependency on the generator model at index time.
 - **Orchestration — LangGraph**: Worth the complexity for query rewriting, HyDE fallback, and confidence-based retries. A straight retrieve-rerank-answer chain is easier to reason about, but loses the fallback behavior.
@@ -149,15 +178,15 @@ Things I'd add to make this easier to score and debug:
 
 - **Repository pattern**: Routers, services, and repositories are strictly separated. Complex SQL and Cypher queries live in the repository layer, not in HTTP handlers. The main payoff is testability — you can mock the data layer without touching the API contract.
 - **Async ingestion**: Document parsing (PDFs, Excel, OCR) gets offloaded to ARQ workers via Redis. Running that synchronously in the FastAPI event loop would block the server under any real load.
-- **Hybrid search (RRF)**: Pure vector similarity is brittle on technical documents — exact-match code snippets or slightly misspelled identifiers can fall through the cracks. Reciprocal Rank Fusion blends cosine similarity with Postgres trigram search, which makes retrieval more robust against those edge cases.
+- **Vector Search**: Pure vector similarity powers retrieval via Qdrant, scalable and performant for large document corpora.
 
 ### Trade-offs I Made Knowingly
 
 The goal was a solid doc-chat system, not a maximal AI platform. Some choices favor simplicity and local execution over completeness:
 
-- **GraphRAG / Neo4j**: Useful for cross-document entity traversal, but probably overkill unless it demonstrably improves answers over the baseline `pgvector` pipeline. Keeping it optional for now.
+- **GraphRAG / Neo4j**: Extracts user preferences and facts into a knowledge graph for personalized chats across sessions.
 - **LangGraph**: The query rewriting and retry loops add orchestration overhead that's harder to explain and evaluate. A simpler pipeline would be easier to debug.
-- **Gemma4:e4b**: Memory and setup cost are low, but synthesis quality shows on complex questions. Worth comparing against a larger local model if hardware allows.
+- **LiteLLM Abstraction**: Unifying providers adds a dependency, but prevents provider lock-in and simplifies the codebase.
 - **Quality gate at 0.05**: Chosen conservatively to avoid hallucination when retrieval is weak, not because it's the right number for every dataset.
 - **Hierarchical chunking + async ingestion**: Better recall and API responsiveness, at the cost of slower ingestion and more moving parts.
 

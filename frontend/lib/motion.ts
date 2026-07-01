@@ -60,3 +60,38 @@ export const containerVariants: Variants = {
     },
   },
 }
+
+/**
+ * Landing page reveal variants — longer duration scroll-driven animations.
+ */
+export const revealContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+export const revealItem: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.8, ease: "easeOut" },
+  },
+}
+
+export const revealHorizontal: Variants = {
+  hidden: { opacity: 0, x: 24 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.6,
+      delay: i * 0.15,
+      ease: "easeOut",
+    },
+  }),
+}

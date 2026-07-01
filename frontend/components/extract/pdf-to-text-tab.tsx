@@ -1,7 +1,6 @@
 "use client"
 
-import * as React from "react"
-import { useState, useRef } from "react"
+import { useRef, useState } from "react"
 import { UploadIcon, Loader2Icon, CopyIcon, CheckIcon, FileTextIcon } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 import { TOKEN_KEY } from "@/lib/app-storage"

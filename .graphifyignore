@@ -5,8 +5,8 @@
 *.scss
 
 # Ignore deployment boilerplate
-docker-compose.yml
-Dockerfile
+compose.yaml
+compose.dev.yaml
 .env*
 
 # Ignore build artifacts

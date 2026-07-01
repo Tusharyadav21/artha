@@ -2,7 +2,6 @@ import {
   MessageSquareIcon,
   BarChart3Icon,
   LandmarkIcon,
-  VideoIcon,
   FileTextIcon,
   SettingsIcon,
   type LucideIcon,
@@ -45,14 +44,6 @@ export const WORKFLOWS: WorkflowDef[] = [
     description: "Parse bank statements",
   },
   {
-    id: "video",
-    label: "Video",
-    icon: VideoIcon,
-    href: "/video",
-    section: "tools",
-    description: "Generate AI short-form videos",
-  },
-  {
     id: "extract",
     label: "Extract",
     icon: FileTextIcon,
@@ -76,7 +67,7 @@ export const WORKFLOW_BY_ID = Object.fromEntries(
 
 export const WORKFLOWS_BY_SECTION = WORKFLOWS.reduce(
   (acc, w) => {
-    ;(acc[w.section] ??= []).push(w)
+    ; (acc[w.section] ??= []).push(w)
     return acc
   },
   {} as Record<WorkflowSection, WorkflowDef[]>

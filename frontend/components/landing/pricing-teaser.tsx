@@ -1,10 +1,10 @@
 "use client"
 
-import * as React from "react"
 import { motion } from "framer-motion"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SectionHeader } from "./section-header"
+import { revealContainer, revealItem } from "@/lib/motion"
 
 interface PricingTeaserProps {
   onGetStartedClick: () => void
@@ -42,23 +42,6 @@ const plans = [
 ]
 
 export function PricingTeaser({ onGetStartedClick }: PricingTeaserProps) {
-  const containerVariants = {
-    visible: {
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 24 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.8 },
-    },
-  }
-
   return (
     <section id="pricing" className="relative px-6 py-20 lg:px-8">
       <div className="mx-auto max-w-6xl">
@@ -68,7 +51,7 @@ export function PricingTeaser({ onGetStartedClick }: PricingTeaserProps) {
         />
 
         <motion.div
-          variants={containerVariants}
+          variants={revealContainer}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
@@ -77,7 +60,7 @@ export function PricingTeaser({ onGetStartedClick }: PricingTeaserProps) {
           {plans.map((plan, index) => (
             <motion.div
               key={index}
-              variants={itemVariants}
+              variants={revealItem}
               className={`relative rounded-xl border p-8 backdrop-blur transition-all ${
                 plan.highlighted
                   ? "border-primary/50 bg-primary/5 ring-1 ring-primary/10"

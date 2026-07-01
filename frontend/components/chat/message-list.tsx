@@ -1,14 +1,11 @@
 "use client"
 
-import * as React from "react"
 import { AnimatePresence } from "framer-motion"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { WelcomeSuggestions } from "@/components/chat/welcome-suggestions"
 import { MessageBubble } from "@/components/chat/message-bubble"
-import { cn } from "@/lib/utils"
-
 interface Message {
   id?: string
   role: string

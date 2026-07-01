@@ -1,17 +1,15 @@
 "use client"
 
-import * as React from "react"
+import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
 
 import { useProjects } from "@/hooks/use-projects"
 import { useDocuments } from "@/hooks/use-documents"
 import { useChat } from "@/hooks/use-chat"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/toast"
 import { MAX_UPLOAD_SIZE, ACCEPTED_FILE_TYPES } from "@/lib/constants"
 
+import { DEFAULT_OLLAMA_SETTINGS } from "@/lib/api"
 import { MessageList } from "@/components/chat/message-list"
 import { ChatInput } from "@/components/chat/chat-input"
 import { HistoryView } from "@/components/chat/history-view"
@@ -25,7 +23,6 @@ export function ChatView() {
   const { activeProject, activeProjectId, isSavingProject, updateProjectSettings } = useProjects()
   const {
     documents,
-    documentsTotal,
     selectedDocumentIds,
     isUploading,
     toggleDocumentScope,
@@ -48,26 +45,26 @@ export function ChatView() {
     conversationsTotal,
   } = useChat()
 
-  const [centerTab, setCenterTab] = React.useState<"chat" | "sources" | "history" | "prompts">("chat")
-  const [isCanvasMode, setIsCanvasMode] = React.useState(false)
-  const [expandedSourceId, setExpandedSourceId] = React.useState<string | null>(null)
-  const [question, setQuestion] = React.useState("")
-  const [webSearchEnabled, setWebSearchEnabled] = React.useState(false)
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const formRef = React.useRef<HTMLFormElement>(null)
+  const [centerTab, setCenterTab] = useState<"chat" | "sources" | "history" | "prompts">("chat")
+  const isCanvasMode = false
+  const [expandedSourceId, setExpandedSourceId] = useState<string | null>(null)
+  const [question, setQuestion] = useState("")
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false)
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_OLLAMA_SETTINGS.localModel)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
-  const activeInContextDocuments = React.useMemo(() => {
+  const activeInContextDocuments = useMemo(() => {
     const completedDocs = documents.filter((doc) => doc.status === "completed")
-    const scoped = completedDocs.filter((doc) => selectedDocumentIds.includes(doc.id))
-    return scoped.length > 0 ? scoped : completedDocs
+    return completedDocs.filter((doc) => selectedDocumentIds.includes(doc.id))
   }, [documents, selectedDocumentIds])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!question.trim()) return
     const currentQuestion = question
     setQuestion("")
-    await submitMessage(currentQuestion)
+    await submitMessage(currentQuestion, selectedModel)
     setExpandedSourceId(null)
   }
 
@@ -75,7 +72,7 @@ export function ChatView() {
     setQuestion(text)
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > MAX_UPLOAD_SIZE) {
@@ -147,6 +144,8 @@ export function ChatView() {
                   hasActiveProject={!!activeProject}
                   webSearchEnabled={webSearchEnabled}
                   onWebSearchToggle={() => setWebSearchEnabled(!webSearchEnabled)}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
                 />
               )}
             </div>

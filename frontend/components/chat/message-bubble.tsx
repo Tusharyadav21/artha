@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import {
   BotIcon,
   ChevronDownIcon,
@@ -43,9 +42,9 @@ interface Document {
 }
 
 interface MessageBubbleProps {
-  message: { id?: string; role: string; content: string }
+  message: { id?: string; role: string; content: string; metadata_?: Record<string, any> }
   index: number
-  messages: Array<{ id?: string; role: string; content: string }>
+  messages: Array<{ id?: string; role: string; content: string; metadata_?: Record<string, any> }>
   sources: Source[]
   documents: Document[]
   isStreaming: boolean
@@ -89,14 +88,15 @@ export function MessageBubble({
     >
       {!isUser && (
         <div className="size-8 rounded-full bg-transparent text-foreground flex items-center justify-center shrink-0 select-none mt-1">
-          <SparklesIcon className="size-5 text-orange-400" />
+          <SparklesIcon className="size-5 text-primary" />
         </div>
       )}
 
       <div className="flex max-w-[85%] flex-col gap-1 w-full">
         {!isUser && hasSources && (
           <div className="mb-2">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => onToggleSources(message.id!)}
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
             >
@@ -105,7 +105,7 @@ export function MessageBubble({
               </div>
               <span className="font-medium">Analyzed {sources.length} sources and {documents.length} documents</span>
               <ChevronDownIcon className={cn("size-3.5 transition-transform duration-200", expandedSourceId === message.id && "rotate-180")} />
-            </button>
+            </Button>
 
             <AnimatePresence>
               {expandedSourceId === message.id && (
@@ -217,6 +217,11 @@ export function MessageBubble({
               </TooltipTrigger>
               <TooltipContent>Not helpful</TooltipContent>
             </Tooltip>
+            {message.metadata_?.model && (
+              <span className="text-[10px] text-muted-foreground/60 ml-auto mr-2 font-mono">
+                {message.metadata_.model as string}
+              </span>
+            )}
           </div>
         )}
       </div>

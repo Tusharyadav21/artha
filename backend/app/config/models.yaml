@@ -1,0 +1,21 @@
+models:
+  planner:
+    provider: "ollama"
+    model_name: "qwen2.5:7b-instruct"
+    temperature: 0.2
+    description: "Used for high-level planning and reasoning."
+  coding:
+    provider: "ollama"
+    model_name: "qwen2.5-coder:7b"
+    temperature: 0.1
+    description: "Specialized in generating and reviewing code."
+  embedding:
+    provider: "ollama"
+    model_name: "bge-m3"
+    temperature: 0.0
+    description: "Used for document embedding in RAG."
+  cheap_tasks:
+    provider: "ollama"
+    model_name: "llama3.2:1b"
+    temperature: 0.7
+    description: "Used for basic text manipulation and formatting."

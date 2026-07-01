@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { ChangeEvent, useMemo, useState } from "react"
 import { UploadIcon, SaveIcon } from "lucide-react"
 
 import { useProjects } from "@/hooks/use-projects"
@@ -42,21 +42,21 @@ export function DocumentLibraryDialog({
     uploadDocument,
   } = useDocuments()
 
-  const [showScopedOnly, setShowScopedOnly] = React.useState(false)
+  const [showScopedOnly] = useState(false)
 
-  const filteredDocuments = React.useMemo(() => {
+  const filteredDocuments = useMemo(() => {
     if (showScopedOnly) {
       return documents.filter((doc) => selectedDocumentIds.includes(doc.id))
     }
     return documents
   }, [documents, selectedDocumentIds, showScopedOnly])
 
-  const completedDocuments = React.useMemo(() => {
+  const completedDocuments = useMemo(() => {
     return filteredDocuments.filter((doc) => doc.status === "completed")
   }, [filteredDocuments])
 
   // fallow-ignore-next-line complexity
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !activeProject) {
       return
@@ -159,35 +159,46 @@ export function DocumentLibraryDialog({
 
             <ScrollArea className="max-h-[400px] rounded-lg border">
               <div className="p-2">
-                {completedDocuments.length > 0 ? (
+                {filteredDocuments.length > 0 ? (
                   <div className="space-y-2">
-                    {completedDocuments.map(
+                    {filteredDocuments.map(
                       // fallow-ignore-next-line complexity
                       (document) => {
                       const isSelected = selectedDocumentIds.includes(document.id)
+                      const isFailed = document.status === "failed"
                       return (
                         <div
                           key={document.id}
                           className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
                             isSelected ? "border-primary/30 bg-primary/5" : "hover:bg-muted"
-                          }`}
-                          onClick={() =>
+                          } ${isFailed ? "border-destructive/30 bg-destructive/5" : ""}`}
+                          onClick={() => {
+                            if (isFailed) return;
                             mode === "scope"
                               ? handleScopeSelect(document.id)
                               : toggleDocumentScope(document.id)
-                          }
+                          }}
                         >
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1 pr-4">
                             <p className="truncate text-sm font-medium">
                               {document.filename}
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatFileSize(document.file_size)}
-                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-xs text-muted-foreground">
+                                {formatFileSize(document.file_size)}
+                              </p>
+                              {isFailed && document.error_message && (
+                                <p className="text-xs text-destructive truncate max-w-[300px]" title={document.error_message}>
+                                  Error: {document.error_message}
+                                </p>
+                              )}
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant="default">{document.status}</Badge>
-                            {mode === "scope" && (
+                            <Badge variant={isFailed ? "destructive" : document.status === "completed" ? "default" : "secondary"}>
+                              {document.status}
+                            </Badge>
+                            {mode === "scope" && document.status === "completed" && (
                               <div
                                 className={`h-5 w-5 rounded-full border flex items-center justify-center transition-colors ${
                                   isSelected
@@ -213,7 +224,7 @@ export function DocumentLibraryDialog({
                     <p className="text-sm text-muted-foreground">
                       {mode === "upload"
                         ? "No documents uploaded yet"
-                        : "No completed documents available"}
+                        : "No documents available"}
                     </p>
                     {mode === "upload" && (
                       <p className="text-xs text-muted-foreground mt-1">

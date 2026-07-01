@@ -1,3 +1,4 @@
+import { ReactNode } from "react"
 export function formatBytes(bytes: number, decimals = 1) {
   if (!bytes) return "0 KB"
   const k = 1024
@@ -29,8 +30,8 @@ export function getDocumentTypeMeta(filename: string, fileSize: number) {
   if (ext === "pdf") {
     return {
       label: "PDF",
-      bgClass: "bg-red-950/40 text-red-400 border border-red-800/40",
-      iconColor: "text-red-500",
+      bgClass: "bg-status-danger/10 text-status-danger border border-status-danger/40",
+      iconColor: "text-status-danger",
       typeLabel: "PDF",
       pagesLabel: `${Math.max(1, Math.ceil(fileSize / 48000))} pages`,
       chunks: Math.max(12, Math.ceil(fileSize / 16000)),
@@ -39,8 +40,8 @@ export function getDocumentTypeMeta(filename: string, fileSize: number) {
   if (["xlsx", "xls", "csv"].includes(ext)) {
     return {
       label: "XLS",
-      bgClass: "bg-emerald-950/40 text-emerald-400 border border-emerald-800/40",
-      iconColor: "text-emerald-500",
+      bgClass: "bg-status-success/10 text-status-success border border-status-success/40",
+      iconColor: "text-status-success",
       typeLabel: "sheets",
       pagesLabel: `${Math.max(1, Math.ceil(fileSize / 64000))} sheets`,
       chunks: Math.max(6, Math.ceil(fileSize / 12000)),
@@ -49,8 +50,8 @@ export function getDocumentTypeMeta(filename: string, fileSize: number) {
   if (["pptx", "ppt"].includes(ext)) {
     return {
       label: "PPT",
-      bgClass: "bg-blue-950/40 text-blue-400 border border-blue-800/40",
-      iconColor: "text-blue-500",
+      bgClass: "bg-status-info/10 text-status-info border border-status-info/40",
+      iconColor: "text-status-info",
       typeLabel: "slides",
       pagesLabel: `${Math.max(4, Math.ceil(fileSize / 120000))} slides`,
       chunks: Math.max(15, Math.ceil(fileSize / 24000)),
@@ -58,8 +59,8 @@ export function getDocumentTypeMeta(filename: string, fileSize: number) {
   }
   return {
     label: "TXT",
-    bgClass: "bg-zinc-800/80 text-zinc-400 border border-zinc-700/50",
-    iconColor: "text-zinc-400",
+    bgClass: "bg-muted/80 text-muted-foreground border border-border/50",
+    iconColor: "text-muted-foreground",
     typeLabel: "lines",
     pagesLabel: `${Math.max(1, Math.ceil(fileSize / 8000))} lines`,
     chunks: Math.max(2, Math.ceil(fileSize / 4000)),
@@ -70,11 +71,11 @@ export function renderMessageContent(content: string, documents: Array<{ id: str
   if (!content) return []
 
   return content.split("\n").map((line, lineIdx) => {
-    let elements: React.ReactNode[] = [line]
+    let elements: ReactNode[] = [line]
 
     documents.forEach((doc) => {
       const name = doc.filename
-      const parts: React.ReactNode[] = []
+      const parts: ReactNode[] = []
 
       elements.forEach((el) => {
         if (typeof el !== "string") {
@@ -89,7 +90,7 @@ export function renderMessageContent(content: string, documents: Array<{ id: str
             parts.push(
               <span
                 key={`${doc.id}-${lineIdx}-${subIdx}`}
-                className="bg-blue-600/15 hover:bg-blue-600/30 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-[11px] font-semibold inline-flex items-center gap-1 rounded mx-0.5 cursor-pointer"
+                className="bg-status-info/15 hover:bg-status-info/30 text-status-info border border-status-info/20 px-2 py-0.5 text-[11px] font-semibold inline-flex items-center gap-1 rounded mx-0.5 cursor-pointer"
                 onClick={() => { if (messageId) onSourceClick(messageId) }}
               >
                 {sub}
@@ -103,7 +104,7 @@ export function renderMessageContent(content: string, documents: Array<{ id: str
       elements = parts
     })
 
-    let finalElements: React.ReactNode[] = []
+    const finalElements: ReactNode[] = []
     elements.forEach(el => {
       if (typeof el !== "string") {
         finalElements.push(el)

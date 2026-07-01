@@ -1,8 +1,6 @@
 "use client"
 
-import * as React from "react"
-import { PlusIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react"
-import { usePathname } from "next/navigation"
+import { PlusIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, ChevronDownIcon } from "lucide-react"
 
 import { useAuth } from "@/hooks/use-auth"
 import { useProjects } from "@/hooks/use-projects"
@@ -19,6 +17,7 @@ import { ConversationItem } from "@/components/sidebar/conversation-item"
 import { NavSection } from "@/components/sidebar/nav-section"
 import { WORKFLOWS_BY_SECTION } from "@/lib/workflows"
 import { cn } from "@/lib/utils"
+import { useState } from "react"
 
 interface SidebarProps {
   mobile?: boolean
@@ -40,6 +39,17 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
       return `${documentsTotal} ${sourcesStr} · ${conversationsTotal} ${chatsStr}`
     }
     return "Default prompt · 0 sources"
+  }
+
+  const [expandedProjects, setExpandedProjects] = useState<string[]>([])
+  const [isProjectsSectionExpanded, setIsProjectsSectionExpanded] = useState(true)
+
+  const toggleProjectExpand = (projectId: string) => {
+    setExpandedProjects((prev) =>
+      prev.includes(projectId)
+        ? prev.filter((id) => id !== projectId)
+        : [...prev, projectId]
+    )
   }
 
   return (
@@ -83,9 +93,6 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
 
       {WORKFLOWS_BY_SECTION.tools && (
         <>
-          <div className="px-5 shrink-0">
-            <Separator className="bg-sidebar-border" />
-          </div>
           <NavSection
             title="Tools"
             items={WORKFLOWS_BY_SECTION.tools}
@@ -97,9 +104,6 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
 
       {WORKFLOWS_BY_SECTION.settings && (
         <>
-          <div className="px-5 shrink-0">
-            <Separator className="bg-sidebar-border" />
-          </div>
           <NavSection
             title="Settings"
             items={WORKFLOWS_BY_SECTION.settings}
@@ -109,28 +113,60 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
         </>
       )}
 
-      {/* Projects scroll area */}
-      <div className="px-5 shrink-0">
-        <Separator className="bg-sidebar-border" />
-      </div>
-
-      <ScrollArea className="flex-1 px-3 pb-4">
+      <ScrollArea className="flex-1 px-2 pb-4">
         <div className="flex flex-col gap-1">
-          {projects.map((project) => {
+          <div className="pb-2">
+            {!isCollapsed && (
+              <Button
+                variant="ghost"
+                onClick={() => setIsProjectsSectionExpanded(!isProjectsSectionExpanded)}
+                className="w-full h-auto flex items-center justify-between px-2 pb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground/60 select-none hover:text-foreground transition-colors group"
+              >
+                <span>Projects</span>
+                <ChevronDownIcon className={cn("size-3 transition-transform duration-200", !isProjectsSectionExpanded && "-rotate-90")} />
+              </Button>
+            )}
+            
+            <div className={cn("flex flex-col gap-0.5 mt-0.5", !isProjectsSectionExpanded && !isCollapsed && "hidden")}>
+              {projects.map((project) => {
             const isActive = project.id === activeProjectId
             const subtitle = getProjectSubtitle(project, isActive)
+            const isExpanded = expandedProjects.includes(project.id)
+            const projectChats = conversations.filter(c => c.project_id === project.id)
             return (
-              <div key={project.id}>
+              <div key={project.id} className="flex flex-col gap-0.5">
                 <ProjectItem
                   project={project}
                   isActive={isActive}
                   isCollapsed={isCollapsed && !mobile}
+                  isExpanded={isExpanded}
                   subtitle={subtitle}
+                  hasChildren={projectChats.length > 0}
+                  onToggle={() => toggleProjectExpand(project.id)}
                   onSelect={() => {
                     void selectProject(project.id)
+                    if (!isExpanded) toggleProjectExpand(project.id)
                     onNavigate?.()
                   }}
                 />
+
+                {/* Nested Chats */}
+                {isExpanded && (!isCollapsed || mobile) && projectChats.length > 0 && (
+                  <div className="flex flex-col gap-0.5 pl-6 mt-0.5 border-l border-sidebar-border ml-3">
+                    {projectChats.map((chat) => (
+                      <ConversationItem
+                        key={chat.id}
+                        conversation={chat}
+                        isActive={chat.id === activeConversationId}
+                        isCollapsed={false}
+                        onOpen={() => {
+                          void openConversation(chat.id)
+                          onNavigate?.()
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })}
@@ -138,18 +174,21 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
           {(!isCollapsed || mobile) && (
             <CreateProjectDialog
               trigger={
-                <button
+                <Button
                   type="button"
-                  className="w-full flex items-center gap-3 px-4 py-2.5 mt-1 rounded-xl text-left text-xs font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 border border-dashed border-border transition duration-200"
+                  variant="ghost"
+                  className="w-full h-auto flex items-center gap-3 px-2 py-2 mt-1 rounded-xl text-left text-xs font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 border border-dashed border-border transition duration-200"
                 >
                   <div className="size-5 rounded-md bg-muted/80 flex items-center justify-center shrink-0 border border-border">
                     <PlusIcon className="size-3 text-muted-foreground" />
                   </div>
                   <span>New project</span>
-                </button>
+                </Button>
               }
             />
           )}
+          </div>
+        </div>
         </div>
 
         {/* Recents Section */}

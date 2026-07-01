@@ -1,9 +1,9 @@
 "use client"
 
-import * as React from "react"
 import { motion } from "framer-motion"
 import { ArrowRight } from "lucide-react"
 import { SectionHeader } from "./section-header"
+import { revealHorizontal } from "@/lib/motion"
 
 export function AISection() {
   const pipelineSteps = [
@@ -24,18 +24,6 @@ export function AISection() {
     },
   ]
 
-  const stepVariants = {
-    hidden: { opacity: 0, x: 24 },
-    visible: (i: number) => ({
-      opacity: 1,
-      x: 0,
-      transition: {
-        duration: 0.6,
-        delay: i * 0.15,
-      },
-    } as const),
-  }
-
   return (
     <section id="capabilities" className="relative px-6 py-20 lg:px-8">
       <div className="mx-auto max-w-6xl">
@@ -49,7 +37,7 @@ export function AISection() {
             <motion.div
               key={step.number}
               custom={i}
-              variants={stepVariants}
+              variants={revealHorizontal}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
@@ -98,16 +86,16 @@ export function AISection() {
           <div className="space-y-2 font-mono text-sm">
             <div className="text-muted-foreground">
               <span className="text-primary">const</span>{" "}
-              <span className="text-yellow-500">response</span> ={" "}
+              <span className="text-status-warning">response</span> ={" "}
               <span className="text-primary">await</span> rag.
-              <span className="text-blue-500">invoke</span>
+              <span className="text-status-info">invoke</span>
               {`({`}
             </div>
             <div className="ml-4 text-muted-foreground">
-              query: <span className="text-green-500">"How does RAG work?"</span>,
+              query: <span className="text-status-success">"How does RAG work?"</span>,
             </div>
             <div className="ml-4 text-muted-foreground">
-              documents: <span className="text-yellow-500">scopedDocs</span>,
+              documents: <span className="text-status-warning">scopedDocs</span>,
             </div>
             <div className="text-muted-foreground">{`})`}</div>
             <div className="pt-2 text-primary">
